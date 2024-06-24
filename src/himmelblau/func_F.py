@@ -18,7 +18,10 @@ def func_F(X, NO_OF_OUTS=1):
         x = X[0]
         y = X[1]   
         F = (x**2 + y - 11)**2 + (x + y**2 - 7)**2
-    except:
+    except Exception as e:
+        print(e)
+        print("X!")
+        print(X)
         noErrors = False
 
     return [F], noErrors
