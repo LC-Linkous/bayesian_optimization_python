@@ -1,9 +1,5 @@
 # bayesian_optimization_python
-Repository for Bayesian Optimization with a Gaussian Process surrogate model in python
-
-Simple sweep optimizer written in Python. 
-
-The approaches in this repo are [exhaustive searches](https://en.wikipedia.org/wiki/Brute-force_search) through a combination of hyperparameters (the inputs for the feasible decision space of the objective function).
+Repository for Bayesian Optimization with a Gaussian Process surrogate model in Python
 
 The class format is based off of the [adaptive timestep PSO optimizer](https://github.com/jonathan46000/pso_python) by [jonathan46000](https://github.com/jonathan46000) for data collection baseline. This repo does not feature any PSO optimization. Instead, the format has been used to retain modularity with other optimizers.
 
