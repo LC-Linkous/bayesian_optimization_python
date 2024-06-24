@@ -167,13 +167,11 @@ class TestGraph():
         self.ax3.set_title('Surrogate Model (GP Mean), Fitted to Samples')  
 
 
-        plt.tight_layout()
         plt.draw()
         plt.pause(0.0001)  # Pause to update the plot
         if self.ctr == 0:
             time.sleep(3)
         self.ctr = self.ctr + 1
-
 
 
     def fit_model(self, x, y):
@@ -200,7 +198,6 @@ class TestGraph():
 
         # Make into grid
         X = np.array(np.meshgrid(*x_dims)).T.reshape(-1, len(lbound)) #2 = number of dims in
-
         mu, sigma = self.model_predict(X)
         ei = self.bayesOptimizer.expected_improvement(X)
 

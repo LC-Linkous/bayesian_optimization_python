@@ -36,6 +36,7 @@ class GaussianProcess:
         X = np.atleast_2d(X)
         K_s = self.rbf_kernel(self.X_sample, X)
         K_ss = self.rbf_kernel(X, X) + self.noise * np.eye(len(X))
+
         mu_s = K_s.T.dot(self.K_inv).dot(self.Y_sample)
         cov_s = K_ss - K_s.T.dot(self.K_inv).dot(K_s)
         return mu_s.ravel(), np.diag(cov_s)

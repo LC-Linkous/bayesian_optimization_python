@@ -69,9 +69,11 @@ class BayesianOptimization:
 
 
             '''
+            self.M                      : An array of current X sample locations. All M values are also personal bests (self.Pb)
             self.output_size            : An integer value for the output size of obj func
             self.Gb                     : Global best position, initialized with a large value.
             self.F_Gb                   : Fitness value corresponding to the global best position.
+            self.F_Pb                   : Fitness value corresponding to the personal best position for each sample. Y sample locations. 
             self.targets                : Target values for the optimization process.
             self.maxit                  : Maximum number of iterations.
             self.E_TOL                  : Error tolerance.
@@ -83,18 +85,14 @@ class BayesianOptimization:
             self.Fvals                  : List to store fitness values.
             self.xi                     : Float. Encourages exploration in expected improvement.
             self.n_restarts             : Integer. Number of randomly genreated proposed sample candiates. 
-            self.X_sample               : List to store the surrogate model X values.
-            self.Y_sample               : List to store the surrogate model Y values.
             self.new_point              : Newest proposed/passed in point.
             '''
 
-
-
-
-
+            self.M = []
             self.output_size = output_size
-            self.Gb = sys.maxsize*np.ones((np.max([heightl, widthl]),1))   
-            self.F_Gb = sys.maxsize*np.ones((output_size,1))                
+            self.Gb = sys.maxsize*np.ones((np.max([heightl, widthl]),1))
+            self.F_Gb = sys.maxsize*np.ones((output_size,1))
+            self.F_Pb = [] #sys.maxsize*np.ones((output_size,1)) #rather than making the limit the max iterations, increment this list.     
             self.targets = np.vstack(np.array(targets))
             self.maxit = maxit                       
             self.E_TOL = E_TOL
@@ -106,28 +104,36 @@ class BayesianOptimization:
             self.Fvals = []    
             self.xi = xi
             self.n_restarts = n_restarts
-            self.X_sample = []
-            self.Y_sample = []
             self.new_point = []
-
-
 
 
     def initialize_starting_points(self, init_num_points=10):
         # Initialize random initial points
         if init_num_points>0:
-            self.X_sample = self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], (init_num_points, len(self.ubound)))
+            self.M = self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], (init_num_points, len(self.ubound)))
             tmp_y = []
             for i in range(0,init_num_points):
-                y, noError = self.obj_func(self.X_sample[i], self.output_size)  # Cumulative Fvals
+                y, noError = self.obj_func(self.M[i], self.output_size)  # Cumulative Fvals
                 if noError == True:
                     tmp_y.append(y[0])
                 else:
                     print("ERROR: objective function error when initilaizing random points")
 
+            #set the fitness values to an array            
+            self.F_Pb = tmp_y
 
-            self.Y_sample = tmp_y
             self.is_fitted = False
+            # tracking the iterations (samples)
+            self.iter=init_num_points
+            print("Model initialized with " + str(self.iter) + " points. \
+            The interation counter will start from " + str(self.iter))
+
+            print("X")
+            print(self.M)
+            print("Y")
+            print(self.F_Pb)
+            time.sleep(3)
+
 
     # SURROGATE MODEL CALLS
     def fit_model(self, x, y):
@@ -142,7 +148,7 @@ class BayesianOptimization:
     # COMPLETION CHECKS
     def converged(self):
         # check if converged
-        if (len(self.F_Gb) < 1):
+        if (len(self.F_Gb) < 1): # no points, no sample
             return False
         convergence = np.linalg.norm(self.F_Gb) < self.E_TOL
         return convergence
@@ -157,15 +163,18 @@ class BayesianOptimization:
         return done
 
     # CHECK PROGRESS
-    def check_global_local(self, Flist):
+    def check_global_local(self, Flist, particle=None):
+        # particle (indexing integer) input is for interfacing with other optimizers.
+
         # use L2 norm to check if fitness val is less than global best fitness
         # if yes, update with the new best point
-        if (len(Flist) < 1) or (len(self.F_Gb)<1): # list is empty
+        if (len(Flist) < 1) or (len(self.F_Gb)<1): # list is empty. not enought points yet
             return
+        # if the current fitness is better than the current global best, replace the var.
         if np.linalg.norm(Flist) < np.linalg.norm(self.F_Gb):
             self.F_Gb = Flist
-            self.Gb = self.new_point        
-    
+            self.Gb = 1*np.vstack(np.array(self.new_point))     
+
     def get_convergence_data(self):
         best_eval = np.linalg.norm(self.F_Gb)
         iteration = 1*self.iter
@@ -180,13 +189,14 @@ class BayesianOptimization:
         return self.F_Gb
 
     def get_sample_points(self):
-        return self.X_sample, self.Y_sample
+        # returns sample locations (self.M) and the associated evaluations (self.F_Pb)
+        return self.M, self.F_Pb
    
     # OPTIMIZER FUNCTIONS
     def expected_improvement(self, X):
         X = np.atleast_2d(X)
         mu, sigma = self.model_predict(X)
-        mu_sample, _ = self.model_predict(self.X_sample)
+        mu_sample, _ = self.model_predict(self.M) #predict using sampled locations
         mu_sample_opt = np.min(mu_sample)
         
         imp = mu_sample_opt - mu - self.xi
@@ -238,20 +248,10 @@ class BayesianOptimization:
         self.new_point = self.propose_location()
         newFVals, noError = self.obj_func(self.new_point[0], self.output_size)
         if noError == True:
-            self.X_sample = np.vstack((self.X_sample, self.new_point))
-            self.Y_sample = np.append(self.Y_sample, newFVals)
-            self.fit_model(self.X_sample, self.Y_sample)
+            self.M = np.vstack((self.M, self.new_point)) # x vals added
+            self.F_Pb = np.append(self.F_Pb, newFVals)   # y vals added. all points are a personal best bc there's no revisit
+            self.fit_model(self.M, self.F_Pb)
 
-
-    def optimize(self, num_iterations=10):        
-        for _ in range(num_iterations):
-            self.sample_next_point()
-        
-        best_idx = np.argmin(self.Y_sample)
-        best_point = self.X_sample[best_idx]
-        best_value = self.Y_sample[best_idx]
-
-        return best_point, best_value
 
     def error_message_generator(self, msg):
         # for error messages, but also repurposed for general updates
@@ -279,9 +279,9 @@ class BayesianOptimization:
             self.Flist = abs(self.targets - self.Fvals)
             self.iter = self.iter + 1
 
-            self.X_sample = np.vstack((self.X_sample, self.new_point))
-            self.Y_sample = np.append(self.Y_sample, [newFVals])
-            self.fit_model(self.X_sample, self.Y_sample)
+            self.M = np.vstack((self.M, self.new_point))
+            self.F_Pb = np.append(self.F_Pb, [newFVals])
+            self.fit_model(self.M, self.F_Pb)
 
         else:
             print("ERROR: in call objective objective function evaluation")
