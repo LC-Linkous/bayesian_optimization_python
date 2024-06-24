@@ -124,15 +124,9 @@ class BayesianOptimization:
 
             self.is_fitted = False
             # tracking the iterations (samples)
-            self.iter=init_num_points
-            print("Model initialized with " + str(self.iter) + " points. \
+            self.iter=init_num_points-1
+            print("Model initialized with " + str(init_num_points) + " points. \
             The interation counter will start from " + str(self.iter))
-
-            print("X")
-            print(self.M)
-            print("Y")
-            print(self.F_Pb)
-            time.sleep(3)
 
 
     # SURROGATE MODEL CALLS
@@ -200,7 +194,6 @@ class BayesianOptimization:
         mu_sample_opt = np.min(mu_sample)
         
         imp = mu_sample_opt - mu - self.xi
-        # Z = imp / sigma
         #Standardize Improvement
         Z = np.where(sigma != 0, imp / sigma, 0)
         ei = imp * (1 + np.tanh(Z))
