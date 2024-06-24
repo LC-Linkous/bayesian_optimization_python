@@ -26,8 +26,11 @@ from gaussian_process import GaussianProcess
 from bayesian_optimizer import BayesianOptimization
 
 # import objective function
-# single objective
-import himmelblau.configs_F as func_configs
+# single objective, 2D input
+#import himmelblau.configs_F as func_configs
+# single objective, 1D input
+import one_dim_x_test.configs_F as func_configs
+
 
 
 class TestGraph():
@@ -42,12 +45,15 @@ class TestGraph():
         GLOBAL_MIN = func_configs.GLOBAL_MIN    # Global minima, if they exist
 
         E_TOL = 10 ** -6                 # Convergence Tolerance. For Sweep, this should be a larger value
-        MAXIT = 200                      # Maximum allowed iterations
+        MAXIT = 1000                      # Maximum allowed iterations
 
         # Objective function dependent variables
         self.func_F = func_configs.OBJECTIVE_FUNC  # objective function
         self.constr_F = func_configs.CONSTR_FUNC   # constraint function
 
+        # handling multiple types of graphs
+        self.in_vars = IN_VARS
+        self.out_vars = OUT_VARS
 
         # Bayesian optimizer tuning params
         self.init_num_points = 15 
@@ -59,7 +65,7 @@ class TestGraph():
         length_scale = 1.0
 
         #plotting vars - make sure plots and samples match
-        self.mesh_sample_dim = 10
+        self.mesh_sample_dim = 25
         self.lbound = LB
         self.ubound = UB
         # Swarm vars
@@ -86,15 +92,9 @@ class TestGraph():
                                                     parent=parent, detailedWarnings=detailedWarnings)  
 
         # Matplotlib setup
-        # Initialize plot
+        # # Initialize plot
         self.fig = plt.figure(figsize=(10, 5))
-        # objective function and sample points
-        self.ax1 = self.fig.add_subplot(131, projection='3d')
-        # aquisition function
-        self.ax2 = self.fig.add_subplot(132)
-        # surogate model
-        self.ax3 = self.fig.add_subplot(133, projection='3d')
-        plt.tight_layout()
+
         self.figNum = self.fig.number
         self.first_run = True
         self.ctr = 0
@@ -120,12 +120,70 @@ class TestGraph():
         if plt.fignum_exists(self.figNum) == False:
             return
         
-        # if self.scatter is None:
-        #clear axes for redraw
-        #self.ax1.clear() #don't clear this. the points should accumulate and function is static
-        self.ax2.clear()
-        self.ax3.clear()
+        if self.in_vars == 1:
+            self.plot_1D(X_sample, Y_sample)
+        elif self.in_vars == 2:
+            if self.out_vars == 1: #single objective
+                self.plot_2D_single(X_sample, Y_sample)
+            elif self.out_vars == 2: #plotable pareto front
+                self.plot_2D_2F(X_sample, Y_sample)
+            else:
+                print("ERROR: too many input variables for current plots")
+        else:
+            print("ERROR: too many input variables for current plots")
 
+
+
+    def plot_1D(self, X_sample, Y_sample) :
+        lbound = np.array(self.lbound[0])
+        ubound = np.array(self.ubound[0])
+    
+        X = np.linspace(lbound, ubound, self.mesh_sample_dim).reshape(-1, 1)
+
+        mu, sigma = self.model_predict(X)
+        ei = self.bayesOptimizer.expected_improvement(X)
+
+        # initialize the plot
+        if self.first_run == True:
+            #self.fig = plt.subplots(2, 1, figsize=(10, 8))
+            self.ax1 = self.fig.add_subplot(121)
+            self.ax2 = self.fig.add_subplot(122)
+
+            plt.tight_layout()
+            self.first_run = False
+
+        # clear plot
+        self.ax1.clear()
+        self.ax2.clear()
+    
+
+        # OBJECTIVE FUNCTION, SAMPLES, AND PREDICTION
+        #The objective functions for this suite are set up to only take 1 point at a time
+        plot_FVals = [] # get ground truth from objective func
+        for i in range(0, len(X)):
+            newFVals, noError = self.func_F(X[i])
+            if noError == False:
+                print("ERROR in objc func call update for loop")
+            plot_FVals.append(newFVals)
+        Y_plot = np.array(plot_FVals).reshape(-1, 1)      
+
+        self.ax1.plot(X, Y_plot, 'r:', label='Objective Function')
+        self.ax1.plot(X_sample, Y_sample, 'r.', markersize=10, label='Samples')
+        self.ax1.plot(X, mu, 'b-', label='GP Mean')
+        self.ax1.fill_between(X.ravel(), mu - 1.96 * sigma, mu + 1.96 * sigma, alpha=0.2, color='b')
+        self.ax1.set_title('Gaussian Process Regression')
+        self.ax1.legend()
+        
+        # EXPECTED IMPROVEMENT
+        self.ax2.plot(X, ei, 'g-', label='Expected Improvement')
+        self.ax2.set_title('Acquisition Function')
+        self.ax2.legend()
+        
+        plt.tight_layout()
+        plt.draw()
+        plt.pause(0.001)
+
+    def plot_2D_single(self, X_sample, Y_sample):
         # create mesh and predict
         X, ei, mu, sigma = self.predict_plot_mesh()
 
@@ -135,9 +193,18 @@ class TestGraph():
         ei = ei.reshape(self.mesh_sample_dim, self.mesh_sample_dim)
         Y_mu_plot = mu.reshape(self.mesh_sample_dim, self.mesh_sample_dim)
 
-        
-        # OBJECTIVE FUNCTION AND SAMPLE PLOT
+        # Initialize plot
         if self.first_run == True:
+            #self.fig = plt.figure(figsize=(10, 5))
+            # objective function and sample points
+            self.ax1 = self.fig.add_subplot(131, projection='3d')
+            # aquisition function
+            self.ax2 = self.fig.add_subplot(132)
+            # surogate model
+            self.ax3 = self.fig.add_subplot(133, projection='3d')
+            plt.tight_layout()
+
+            # OBJECTIVE FUNCTION AND SAMPLE PLOT
             # to save time, just draw the static plot when this is true
             X_plot = X 
             #The objective functions for this suite are set up to only take 1 point at a time
@@ -152,6 +219,14 @@ class TestGraph():
             #after this works. do not change
             self.ax1.plot_surface(X0, X1, Y_plot, cmap='viridis', alpha=0.7)
             self.first_run = False
+
+        # if self.scatter is None:
+        #clear axes for redraw
+        #self.ax1.clear() #don't clear this. the points should accumulate and function is static
+        self.ax2.clear()
+        self.ax3.clear()
+      
+        # # OBJECTIVE FUNCTION AND SAMPLE PLOT
         # The title gets updated every time to track the iterations
         self.ax1.set_title("Objective Function & " + str(len(Y_sample)) + " Samples")
         self.ax1.scatter(X_sample[:, 0], X_sample[:, 1], Y_sample, c='r', s=50)
@@ -172,8 +247,14 @@ class TestGraph():
         if self.ctr == 0:
             time.sleep(3)
         self.ctr = self.ctr + 1
+        
+
+    def plot_2D_2F(self, X_sample, Y_sample):
+
+        pass
 
 
+    # SURROGATE MODEL FUNCS
     def fit_model(self, x, y):
         # call out to parent class to use surrogate model
         self.gp.fit(x,y)
@@ -241,6 +322,8 @@ class TestGraph():
         print(self.bayesOptimizer.get_optimized_soln())
         print("Optimized Outputs")
         print(self.bayesOptimizer.get_optimized_outs())
+
+        time.sleep(30)
 
 
 if __name__ == "__main__":

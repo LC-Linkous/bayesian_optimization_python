@@ -21,18 +21,28 @@ from gaussian_process import GaussianProcess
 from bayesian_optimizer import BayesianOptimization
 
 # import objective function
-# single objective
-import himmelblau.configs_F as func_configs
-
+# single objective, 2D input
+#import himmelblau.configs_F as func_configs
+# single objective, 1D input
+import configs_F as func_configs
 
 class Test():
     def __init__(self):
-        LB = [[-5, -5]]           # Lower boundaries
-        UB = [[5, 5]]             # Upper boundaries
+        # LB = [[-5, -5]]           # Lower boundaries
+        # UB = [[5, 5]]             # Upper boundaries
+        # OUT_VARS = 1              # Number of output variables (y-values)
+        # TARGETS = [0]             # Target values for output
+        # E_TOL = 10 ** -6          # Convergence Tolerance
+        # MAXIT = 200               # Maximum allowed iterations
+
+        LB = [[-5]]                 # Lower boundaries
+        UB = [[5]]                  # Upper boundaries
+        IN_VARS = 1
         OUT_VARS = 1              # Number of output variables (y-values)
         TARGETS = [0]             # Target values for output
-        E_TOL = 10 ** -6          # Convergence Tolerance
+        E_TOL = 10 ** -15         # Convergence Tolerance
         MAXIT = 200               # Maximum allowed iterations
+
 
         # Objective function dependent variables
         func_F = func_configs.OBJECTIVE_FUNC  # objective function

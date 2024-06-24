@@ -124,7 +124,7 @@ class BayesianOptimization:
 
             self.is_fitted = False
             # tracking the iterations (samples)
-            self.iter=init_num_points-1
+            self.iter=init_num_points
             print("Model initialized with " + str(init_num_points) + " points. \
             The interation counter will start from " + str(self.iter))
 
@@ -157,9 +157,7 @@ class BayesianOptimization:
         return done
 
     # CHECK PROGRESS
-    def check_global_local(self, Flist, particle=None):
-        # particle (indexing integer) input is for interfacing with other optimizers.
-
+    def check_global_local(self, Flist):
         # use L2 norm to check if fitness val is less than global best fitness
         # if yes, update with the new best point
         if (len(Flist) < 1) or (len(self.F_Gb)<1): # list is empty. not enought points yet
@@ -204,13 +202,18 @@ class BayesianOptimization:
     def propose_location(self):
         dim = len(self.lbound)
         min_val = 1
-        min_x = None
+        min_x = None # may stay none if it doesn't minimize
 
         for x0 in self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], size=(self.n_restarts, dim)):
             x, f_x = self.minimize(x0)
             if f_x < min_val:
                 min_val = f_x
                 min_x = x
+
+        if min_x is None:
+            # Return a random point in bounds
+            min_x = self.rng.uniform(self.lbound.reshape(1, -1)[0], self.ubound.reshape(1, -1)[0])
+
 
         return np.array([min_x])
 
@@ -237,15 +240,6 @@ class BayesianOptimization:
             grad[i] = (ei_x_eps - ei_x) / eps
         return grad
 
-    def sample_next_point(self):
-        self.new_point = self.propose_location()
-        newFVals, noError = self.obj_func(self.new_point[0], self.output_size)
-        if noError == True:
-            self.M = np.vstack((self.M, self.new_point)) # x vals added
-            self.F_Pb = np.append(self.F_Pb, newFVals)   # y vals added. all points are a personal best bc there's no revisit
-            self.fit_model(self.M, self.F_Pb)
-
-
     def error_message_generator(self, msg):
         # for error messages, but also repurposed for general updates
         if self.parent == None:
@@ -266,6 +260,7 @@ class BayesianOptimization:
         if len(self.new_point) < 1: # point not set
             print("WARNING: no point set for objective call. Ignore unless this is persistent.")
             return
+
         newFVals, noError = self.obj_func(self.new_point[0], self.output_size)
         if noError==True:
             self.Fvals = newFVals
@@ -301,6 +296,7 @@ class BayesianOptimization:
 
             #self.sample_next_point(), but split up
             self.new_point = self.propose_location()
+        
 
             # There is no handling boundaries for points in the bayesian optimizer
             # because the proposed location is already bounded by the problem space
