@@ -20,11 +20,15 @@ from gaussian_process import GaussianProcess
 #import optimizer
 from bayesian_optimizer import BayesianOptimization
 
-# import objective function
-# single objective, 2D input
-#import himmelblau.configs_F as func_configs
+# # import objective function (examples) - uncomment to test a function
+# # single objective, 2D input
+# import himmelblau.configs_F as func_configs
+
 # single objective, 1D input
-import configs_F as func_configs
+import one_dim_x_test.configs_F as func_configs
+
+# # multi objective function
+#import lundquist_3_var.configs_F as func_configs
 
 class Test():
     def __init__(self):
@@ -35,18 +39,23 @@ class Test():
         # E_TOL = 10 ** -6          # Convergence Tolerance
         # MAXIT = 200               # Maximum allowed iterations
 
-        LB = [[-5]]                 # Lower boundaries
-        UB = [[5]]                  # Upper boundaries
-        IN_VARS = 1
-        OUT_VARS = 1              # Number of output variables (y-values)
-        TARGETS = [0]             # Target values for output
-        E_TOL = 10 ** -15         # Convergence Tolerance
-        MAXIT = 200               # Maximum allowed iterations
+        LB = func_configs.LB                    # Lower boundaries
+        UB = func_configs.UB                    # Upper boundaries
+        IN_VARS = func_configs.IN_VARS          # Number of input variables (x-values)
+        OUT_VARS = func_configs.OUT_VARS        # Number of output variables (y-values)
+        TARGETS = func_configs.TARGETS          # Target values for output
+        GLOBAL_MIN = func_configs.GLOBAL_MIN    # Global minima, if they exist
 
+        E_TOL = 10 ** -6                  # Convergence Tolerance. For Sweep, this should be a larger value
+        MAXIT = 1000                      # Maximum allowed iterations
 
         # Objective function dependent variables
-        func_F = func_configs.OBJECTIVE_FUNC  # objective function
-        constr_F = func_configs.CONSTR_FUNC   # constraint function
+        self.func_F = func_configs.OBJECTIVE_FUNC  # objective function
+        self.constr_F = func_configs.CONSTR_FUNC   # constraint function
+
+        # handling multiple types of graphs
+        self.in_vars = IN_VARS
+        self.out_vars = OUT_VARS
 
         # Bayesian optimizer tuning params
         self.init_num_points = 2 
@@ -75,7 +84,7 @@ class Test():
 
         self.gp = GaussianProcess(length_scale=length_scale,noise=noise)  # select the surrogate model
         self.bayesOptimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
-                                                    func_F, constr_F, 
+                                                    self.func_F, self.constr_F, 
                                                     xi = xi, n_restarts=n_restarts,
                                                     parent=parent, detailedWarnings=detailedWarnings)  
 
@@ -95,6 +104,7 @@ class Test():
         pass
          
 
+    # SURROGATE MODEL FUNCS
     def fit_model(self, x, y):
         # call out to parent class to use surrogate model
         self.gp.fit(x,y)
@@ -102,13 +112,11 @@ class Test():
 
     def model_predict(self, x):
         # call out to parent class to use surrogate model
-        mu, sigma = self.gp.predict(x)
+        mu, sigma = self.gp.predict(x, self.out_vars)
         return mu, sigma
 
 
-    def run(self):
-
-        
+    def run(self):        
         # set up the initial sample points  (randomly generated in this example)
         self.bayesOptimizer.initialize_starting_points(self.init_num_points)
         # get the sample points out (to ensure standard formatting)

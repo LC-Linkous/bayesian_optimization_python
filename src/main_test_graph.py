@@ -11,7 +11,7 @@
 #       matplotlib plot of objective function and surrogate model
 #
 #   Author(s): Lauren Linkous, Jonathan Lundquist
-#   Last update: June 19, 2024
+#   Last update: June 24, 2024
 ##--------------------------------------------------------------------\
 
 
@@ -25,17 +25,20 @@ from gaussian_process import GaussianProcess
 #import optimizer
 from bayesian_optimizer import BayesianOptimization
 
-# import objective function
-# single objective, 2D input
-#import himmelblau.configs_F as func_configs
+# # import objective function (examples) - uncomment to test a function
+# # single objective, 2D input
+# import himmelblau.configs_F as func_configs
+
 # single objective, 1D input
 import one_dim_x_test.configs_F as func_configs
+
+# # multi objective function
+#import lundquist_3_var.configs_F as func_configs
 
 
 
 class TestGraph():
     def __init__(self):
-
 
         LB = func_configs.LB                    # Lower boundaries
         UB = func_configs.UB                    # Upper boundaries
@@ -44,7 +47,7 @@ class TestGraph():
         TARGETS = func_configs.TARGETS          # Target values for output
         GLOBAL_MIN = func_configs.GLOBAL_MIN    # Global minima, if they exist
 
-        E_TOL = 10 ** -6                 # Convergence Tolerance. For Sweep, this should be a larger value
+        E_TOL = 10 ** -6                  # Convergence Tolerance. For Sweep, this should be a larger value
         MAXIT = 1000                      # Maximum allowed iterations
 
         # Objective function dependent variables
@@ -56,16 +59,16 @@ class TestGraph():
         self.out_vars = OUT_VARS
 
         # Bayesian optimizer tuning params
-        self.init_num_points = 15 
+        self.init_num_points = 2 
         xi = 0.01
         n_restarts = 25
 
         # Gaussian Process vars
         noise = 1e-10
-        length_scale = 1.0
+        length_scale = 1.1
 
         #plotting vars - make sure plots and samples match
-        self.mesh_sample_dim = 25
+        self.mesh_sample_dim = 20
         self.lbound = LB
         self.ubound = UB
         # Swarm vars
@@ -93,7 +96,7 @@ class TestGraph():
 
         # Matplotlib setup
         # # Initialize plot
-        self.fig = plt.figure(figsize=(10, 5))
+        self.fig = plt.figure(figsize=(10, 6))
 
         self.figNum = self.fig.number
         self.first_run = True
@@ -125,12 +128,16 @@ class TestGraph():
         elif self.in_vars == 2:
             if self.out_vars == 1: #single objective
                 self.plot_2D_single(X_sample, Y_sample)
-            elif self.out_vars == 2: #plotable pareto front
-                self.plot_2D_2F(X_sample, Y_sample)
             else:
-                print("ERROR: too many input variables for current plots")
+                print("ERROR: objective function not currently supported for plots")
+        elif self.in_vars == 3:
+            if self.out_vars == 2:
+                self.plot_2D_multi(X_sample, Y_sample)
+            else:
+                print("ERROR: objective function not currently supported for plots")
+
         else:
-            print("ERROR: too many input variables for current plots")
+            print("ERROR: objective function not currently supported for plots")
 
 
 
@@ -145,7 +152,6 @@ class TestGraph():
 
         # initialize the plot
         if self.first_run == True:
-            #self.fig = plt.subplots(2, 1, figsize=(10, 8))
             self.ax1 = self.fig.add_subplot(121)
             self.ax2 = self.fig.add_subplot(122)
 
@@ -183,7 +189,13 @@ class TestGraph():
         plt.draw()
         plt.pause(0.001)
 
+        if self.ctr == 0:
+            time.sleep(5)
+        self.ctr = self.ctr + 1
+
+
     def plot_2D_single(self, X_sample, Y_sample):
+
         # create mesh and predict
         X, ei, mu, sigma = self.predict_plot_mesh()
 
@@ -195,12 +207,11 @@ class TestGraph():
 
         # Initialize plot
         if self.first_run == True:
-            #self.fig = plt.figure(figsize=(10, 5))
             # objective function and sample points
             self.ax1 = self.fig.add_subplot(131, projection='3d')
             # aquisition function
             self.ax2 = self.fig.add_subplot(132)
-            # surogate model
+            # surogate model (pareto front)
             self.ax3 = self.fig.add_subplot(133, projection='3d')
             plt.tight_layout()
 
@@ -249,9 +260,89 @@ class TestGraph():
         self.ctr = self.ctr + 1
         
 
-    def plot_2D_2F(self, X_sample, Y_sample):
+    def plot_2D_multi(self, X_sample, Y_sample):
+        #create mesh and predict
+        lbound = np.array(self.lbound[0])
+        ubound = np.array(self.ubound[0])    
+        X = np.linspace(lbound, ubound, self.mesh_sample_dim)#.reshape(-1, 1)
 
-        pass
+        # Initialize plot
+        if self.first_run == True:
+            # objective function pareto front
+            self.ax1 = self.fig.add_subplot(121, projection='3d')
+            # surrogate model pareto front
+            self.ax2 = self.fig.add_subplot(122, projection='3d')
+            plt.tight_layout()
+            self.first_run = False
+        
+        # clear plots
+        self.ax1.clear()
+        self.ax2.clear()
+      
+        # # OBJECTIVE FUNCTION AND SAMPLE PLOT
+        #The objective functions for this suite are set up to only take 1 point at a time
+        plot_FVals = [] # get ground truth from objective func
+        for i in range(0, len(X)):
+            newFVals, noError = self.func_F(X[i])
+            if noError == False:
+                print("ERROR in objc func call update for loop")
+            plot_FVals.append(newFVals)
+        Y = np.array(plot_FVals).reshape(-1, 2)
+        Y0 = Y[:,0].reshape(-1, 1)
+        Y1 = Y[:,1].reshape(-1, 1)
+        self.ax1.scatter(Y0, Y1, c='b', label='Objective Func Output')
+        self.ax1.set_title("Objective Function Output Sampling \n & " + str(len(Y_sample)) + " Samples")
+        self.ax1.scatter(Y_sample[:, 0], Y_sample[:, 1], c='r', s=50, label='Samples')
+        self.ax1.legend()
+        
+        # the 3 dimensional arrays are too much to put in at once, so do it in pieces.
+        mu_arr = []
+        ei_arr = []
+        for x in X:
+            mu, sigma = self.model_predict(x)
+            ei = self.bayesOptimizer.expected_improvement(x)
+            mu_arr.append(mu)
+            ei_arr.append(ei)
+
+        # reshape
+        ei = np.array(ei_arr).reshape(-1, 1)
+        Y_mu_plot = np.array(mu_arr).reshape(-1, 2)
+
+        # SURROGATE MODEL PLOT
+        self.ax2.scatter(Y_mu_plot[:,0], Y_mu_plot[:,1], c='b', label='Surrogate Output')
+        self.ax2.scatter(Y_sample[:, 0], Y_sample[:, 1], c='r', s=50, label='Samples')
+        self.ax2.set_title('Surrogate Model (GP Mean), \n Fitted to Samples')  
+        self.ax2.legend()
+        
+        plt.draw()
+        plt.pause(0.0001)  # Pause to update the plot
+        if self.ctr == 0:
+            time.sleep(3)
+        self.ctr = self.ctr + 1
+
+
+    def pareto_front(X, Y, minimize=True):
+        pareto_front_X = []
+        pareto_front_Y = []
+
+        if minimize:
+            # Find Pareto front for minimizing objectives
+            pareto_front_Y_max = float('inf')
+            for x, y in sorted(zip(X, Y)):
+                if y < pareto_front_Y_max:
+                    pareto_front_X.append(x)
+                    pareto_front_Y.append(y)
+                    pareto_front_Y_max = y
+        else:
+            # Find Pareto front for maximizing objectives
+            pareto_front_Y_min = float('-inf')
+            for x, y in sorted(zip(X, Y), reverse=True):
+                if y > pareto_front_Y_min:
+                    pareto_front_X.append(x)
+                    pareto_front_Y.append(y)
+                    pareto_front_Y_min = y
+
+        return pareto_front_X, pareto_front_Y
 
 
     # SURROGATE MODEL FUNCS
@@ -262,7 +353,7 @@ class TestGraph():
 
     def model_predict(self, x):
         # call out to parent class to use surrogate model
-        mu, sigma = self.gp.predict(x)
+        mu, sigma = self.gp.predict(x, self.out_vars)
         return mu, sigma
 
 
@@ -289,11 +380,11 @@ class TestGraph():
 
 
         # set up the initial sample points  (randomly generated in this example)
-        self.bayesOptimizer.initialize_starting_points(2)
+        self.bayesOptimizer.initialize_starting_points(self.init_num_points)
         # get the sample points out (to ensure standard formatting)
         x_sample, y_sample = self.bayesOptimizer.get_sample_points()
         # fit GP model.
-        self.gp.fit(x_sample, y_sample)
+        self.gp.fit(x_sample, y_sample) #, self.out_vars)
 
 
         # instantiation of particle swarm optimizer 
@@ -323,7 +414,7 @@ class TestGraph():
         print("Optimized Outputs")
         print(self.bayesOptimizer.get_optimized_outs())
 
-        time.sleep(30)
+        time.sleep(30) #hold the graph open
 
 
 if __name__ == "__main__":
