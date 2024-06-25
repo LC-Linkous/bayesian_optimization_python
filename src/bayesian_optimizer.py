@@ -115,12 +115,12 @@ class BayesianOptimization:
             for i in range(0,init_num_points):
                 y, noError = self.obj_func(self.M[i], self.output_size)  # Cumulative Fvals
                 if noError == True:
-                    tmp_y.append(y[0])
+                    tmp_y.append(y)
                 else:
                     print("ERROR: objective function error when initilaizing random points")
 
             #set the fitness values to an array            
-            self.F_Pb = tmp_y
+            self.F_Pb = np.array(tmp_y)
 
             self.is_fitted = False
             # tracking the iterations (samples)
@@ -134,7 +134,7 @@ class BayesianOptimization:
         # call out to parent class to use surrogate model
         self.parent.fit_model(x,y)
 
-    def model_predict(self, x):
+    def model_predict(self, x) : #, outvar):
         # call out to parent class to use surrogate model
         mu, sigma = self.parent.model_predict(x)
         return mu, sigma
@@ -172,7 +172,6 @@ class BayesianOptimization:
         iteration = 1*self.iter
         return iteration, best_eval
 
-
     # GETTERS
     def get_optimized_soln(self):
         return self.Gb 
@@ -187,15 +186,20 @@ class BayesianOptimization:
     # OPTIMIZER FUNCTIONS
     def expected_improvement(self, X):
         X = np.atleast_2d(X)
-        mu, sigma = self.model_predict(X)
+        mu, sigma = self.model_predict(X) #mean and standard deviation
         mu_sample, _ = self.model_predict(self.M) #predict using sampled locations
         mu_sample_opt = np.min(mu_sample)
         
         imp = mu_sample_opt - mu - self.xi
+
         #Standardize Improvement
         Z = np.where(sigma != 0, imp / sigma, 0)
         ei = imp * (1 + np.tanh(Z))
-        ei[sigma == 0.0] = 0.0
+        # # This introduces more stability into the model, 
+        # # but the tested problems do much worse with exploration
+        # for idx in range(0, len(sigma)):
+        #     if sigma[idx] == 0.0:
+        #         ei[:,idx] = np.multiply(ei[:,idx],0.0)
         
         return ei
 
@@ -206,7 +210,8 @@ class BayesianOptimization:
 
         for x0 in self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], size=(self.n_restarts, dim)):
             x, f_x = self.minimize(x0)
-            if f_x < min_val:
+            #using the l2norm to handle single and multi objective
+            if np.linalg.norm(f_x) < np.linalg.norm(min_val):
                 min_val = f_x
                 min_x = x
 
@@ -237,7 +242,9 @@ class BayesianOptimization:
             x_eps[i] += eps
             ei_x_eps = -self.expected_improvement(np.array([x_eps]))
             ei_x = -self.expected_improvement(np.array([x]))
-            grad[i] = (ei_x_eps - ei_x) / eps
+            grad_arr = (ei_x_eps - ei_x) / eps
+            grad[i] = np.linalg.norm(grad_arr) # Aggregate. explore other methods later. (summation?)
+
         return grad
 
     def error_message_generator(self, msg):
@@ -268,7 +275,7 @@ class BayesianOptimization:
             self.iter = self.iter + 1
 
             self.M = np.vstack((self.M, self.new_point))
-            self.F_Pb = np.append(self.F_Pb, [newFVals])
+            self.F_Pb = np.vstack((self.F_Pb, [newFVals]))
             self.fit_model(self.M, self.F_Pb)
 
         else:
