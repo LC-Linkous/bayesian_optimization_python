@@ -15,20 +15,21 @@
 
 import numpy as np
 import time
-#import surrogate model kernel
+#import surrogate model
 from gaussian_process import GaussianProcess
+
 #import optimizer
 from bayesian_optimizer import BayesianOptimization
 
 # # import objective function (examples) - uncomment to test a function
 # # single objective, 2D input
-# import himmelblau.configs_F as func_configs
+#import himmelblau.configs_F as func_configs
 
 # single objective, 1D input
-import one_dim_x_test.configs_F as func_configs
+#import one_dim_x_test.configs_F as func_configs
 
 # # multi objective function
-#import lundquist_3_var.configs_F as func_configs
+import lundquist_3_var.configs_F as func_configs
 
 class Test():
     def __init__(self):
@@ -47,7 +48,7 @@ class Test():
         GLOBAL_MIN = func_configs.GLOBAL_MIN    # Global minima, if they exist
 
         E_TOL = 10 ** -6                  # Convergence Tolerance. For Sweep, this should be a larger value
-        MAXIT = 1000                      # Maximum allowed iterations
+        MAXIT = 300                       # Maximum allowed iterations
 
         # Objective function dependent variables
         self.func_F = func_configs.OBJECTIVE_FUNC  # objective function
@@ -79,10 +80,9 @@ class Test():
                                         # (Independent of suppress output. 
                                         #  Includes error messages and warnings)
 
-        self.allow_update = True      # Allow objective call to update state 
+        self.allow_update = True        # Allow objective call to update state 
 
-
-        self.gp = GaussianProcess(length_scale=length_scale,noise=noise)  # select the surrogate model
+        self.sm = GaussianProcess(length_scale=length_scale,noise=noise)  # select the surrogate model
         self.bayesOptimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
                                                     self.func_F, self.constr_F, 
                                                     xi = xi, n_restarts=n_restarts,
@@ -107,12 +107,12 @@ class Test():
     # SURROGATE MODEL FUNCS
     def fit_model(self, x, y):
         # call out to parent class to use surrogate model
-        self.gp.fit(x,y)
+        self.sm.fit(x,y)
         
 
     def model_predict(self, x):
         # call out to parent class to use surrogate model
-        mu, sigma = self.gp.predict(x, self.out_vars)
+        mu, sigma = self.sm.predict(x, self.out_vars)
         return mu, sigma
 
 
@@ -122,7 +122,7 @@ class Test():
         # get the sample points out (to ensure standard formatting)
         x_sample, y_sample = self.bayesOptimizer.get_sample_points()
         # fit GP model.
-        self.gp.fit(x_sample, y_sample)
+        self.sm.fit(x_sample, y_sample)
 
 
         # instantiation of particle swarm optimizer 

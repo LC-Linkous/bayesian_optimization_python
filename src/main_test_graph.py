@@ -20,21 +20,22 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import time
-#import surrogate model kernel
+
+#import surrogate model
 from gaussian_process import GaussianProcess
+
 #import optimizer
 from bayesian_optimizer import BayesianOptimization
 
 # # import objective function (examples) - uncomment to test a function
 # # single objective, 2D input
-# import himmelblau.configs_F as func_configs
+#import himmelblau.configs_F as func_configs
 
 # single objective, 1D input
-import one_dim_x_test.configs_F as func_configs
+#import one_dim_x_test.configs_F as func_configs
 
 # # multi objective function
-#import lundquist_3_var.configs_F as func_configs
-
+import lundquist_3_var.configs_F as func_configs
 
 
 class TestGraph():
@@ -68,7 +69,7 @@ class TestGraph():
         length_scale = 1.1
 
         #plotting vars - make sure plots and samples match
-        self.mesh_sample_dim = 20
+        self.mesh_sample_dim = 10
         self.lbound = LB
         self.ubound = UB
         # Swarm vars
@@ -88,7 +89,8 @@ class TestGraph():
         self.allow_update = True        # Allow objective call to update state 
 
 
-        self.gp = GaussianProcess(length_scale=length_scale,noise=noise)  # select the surrogate model
+        
+        self.sm = GaussianProcess(length_scale=length_scale,noise=noise)  # select the surrogate model
         self.bayesOptimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
                                                     self.func_F, self.constr_F, 
                                                     xi = xi, n_restarts=n_restarts,
@@ -124,6 +126,7 @@ class TestGraph():
             return
         
         if self.in_vars == 1:
+            print(Y_sample)
             self.plot_1D(X_sample, Y_sample)
         elif self.in_vars == 2:
             if self.out_vars == 1: #single objective
@@ -176,7 +179,7 @@ class TestGraph():
         self.ax1.plot(X, Y_plot, 'r:', label='Objective Function')
         self.ax1.plot(X_sample, Y_sample, 'r.', markersize=10, label='Samples')
         self.ax1.plot(X, mu, 'b-', label='GP Mean')
-        self.ax1.fill_between(X.ravel(), mu - 1.96 * sigma, mu + 1.96 * sigma, alpha=0.2, color='b')
+        self.ax1.fill_between(X.ravel(), (mu - 1.96 * sigma).ravel(), (mu + 1.96 * sigma).ravel(), alpha=0.2, color='b')
         self.ax1.set_title('Gaussian Process Regression')
         self.ax1.legend()
         
@@ -344,17 +347,19 @@ class TestGraph():
 
         return pareto_front_X, pareto_front_Y
 
-
+   
+   
     # SURROGATE MODEL FUNCS
     def fit_model(self, x, y):
         # call out to parent class to use surrogate model
-        self.gp.fit(x,y)
+        self.sm.fit(x,y)
         
 
     def model_predict(self, x):
         # call out to parent class to use surrogate model
-        mu, sigma = self.gp.predict(x, self.out_vars)
+        mu, sigma = self.sm.predict(x, self.out_vars)
         return mu, sigma
+
 
 
     def predict_plot_mesh(self):
@@ -384,7 +389,7 @@ class TestGraph():
         # get the sample points out (to ensure standard formatting)
         x_sample, y_sample = self.bayesOptimizer.get_sample_points()
         # fit GP model.
-        self.gp.fit(x_sample, y_sample) #, self.out_vars)
+        self.sm.fit(x_sample, y_sample) #, self.out_vars)
 
 
         # instantiation of particle swarm optimizer 

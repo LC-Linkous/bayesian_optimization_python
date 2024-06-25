@@ -24,6 +24,7 @@ class GaussianProcess:
         return np.exp(-0.5 * dists / self.length_scale**2)
 
     def fit(self, X_sample, Y_sample):
+        # returns mean and variance
         self.X_sample = np.atleast_2d(X_sample)
         self.Y_sample = np.atleast_2d(Y_sample)
         self.K = self.rbf_kernel(self.X_sample, self.X_sample) + self.noise * np.eye(len(self.X_sample))
@@ -32,7 +33,7 @@ class GaussianProcess:
 
     def predict(self, X, out_dims=2):
         if not self.is_fitted:
-            raise ValueError("GaussianProcess model is not fitted yet")
+            print("ERROR: GaussianProcess model is not fitted yet")
         X = np.atleast_2d(X)
         K_s = self.rbf_kernel(self.X_sample, X)
         K_ss = self.rbf_kernel(X, X) + self.noise * np.eye(len(X))
