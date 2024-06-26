@@ -10,7 +10,7 @@ Now featuring AntennaCAT hooks for GUI integration and user input handling.
 * [Requirements](#requirements)
 * [Implementation](#implementation)
     * [Constraint Handling](#constraint-handling)
-    * [Single-Objective Optimization](#single-objective-optimization)
+    * [Multi-Objective Optimization](#multi-objective-optimization)
     * [Objective Function Handling](#objective-function-handling)
       * [Internal Objective Function Example](internal-objective-function-example)
 * [Example Implementations](#example-implementations)
@@ -52,7 +52,7 @@ zipp==3.18.1
 In this example, proposed points are generated within the provided bounds of the problem, so there is no extra constraint handling added. 
 
 
-### Multi-Object Optimization
+### Multi-Objective Optimization
 The no preference method of multi-objective optimization, but a Pareto Front is not calculated. Instead, the best choice (smallest norm of output vectors) is listed as the output.
 
 ### Objective Function Handling
