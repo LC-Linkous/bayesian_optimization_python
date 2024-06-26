@@ -14,7 +14,7 @@ Now featuring AntennaCAT hooks for GUI integration and user input handling.
     * [Objective Function Handling](#objective-function-handling)
       * [Internal Objective Function Example](internal-objective-function-example)
 * [Example Implementations](#example-implementations)
-    * [Basic Sweep Example](#basic-sweep-example)
+    * [Basic Example](#basic-example)
     * [Realtime Graph](#realtime-graph)
 * [References](#references)
 * [Publications and Integration](#publications-and-integration)
