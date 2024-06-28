@@ -2,7 +2,7 @@
 
 ##--------------------------------------------------------------------\
 #   bayesian_optimization_python
-#   './bayesian_optimization_python/src/main_test_graph.py'
+#   './bayesian_optimization_python/src/surrogate_models/main_test_graph.py'
 #   Guassian Process surrogate model for optimization. 
 #
 #   Author(s): Lauren Linkous 
@@ -40,7 +40,6 @@ class GaussianProcess:
 
         ysample = self.Y_sample.reshape(-1, out_dims)
         mu_s = K_s.T.dot(self.K_inv).dot(ysample)
-        # mu_s = K_s.T.dot(self.K_inv).dot(self.Y_sample)
         cov_s = K_ss - K_s.T.dot(self.K_inv).dot(K_s)
         return mu_s.ravel(), np.diag(cov_s)
 
