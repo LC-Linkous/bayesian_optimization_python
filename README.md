@@ -1,18 +1,28 @@
 # bayesian_optimization_python
-Repository for Bayesian Optimization with a Gaussian Process surrogate model in Python
+Repository for demoing the effect of various surrogate models on Bayesian Optimization accuracy. 
 
 The class format is based off of the [adaptive timestep PSO optimizer](https://github.com/jonathan46000/pso_python) by [jonathan46000](https://github.com/jonathan46000) for data collection baseline. This repo does not feature any PSO optimization. Instead, the format has been used to retain modularity with other optimizers.
+
+The surrogate models are designed to interface with the optimizers in the AntennaCAT suite, but have not been exhaustively tested as of June. 24 while they are in parallel development. See [References](#references) for the running list of references as optimizers and surrogate models are added/edited, and features are updated.
 
 Now featuring AntennaCAT hooks for GUI integration and user input handling.
 
 ## Table of Contents
 * [Bayesian Search](#bayesian-search)
+* [Surrogate Models](#surrogate-models)
+    * [Radial Basis Function Network](#radial-basis-function-network)
+    * [Gaussian Process](#gaussian-process)
+    * [Kriging](#kriging)
+    * [Polynomial Regression](#polynomial-regression)
+    * [Polynomial Chaos Expansion](#polynomial-chaos-expansion)
+    * [K-Nearest Neighbors Regression](#)
+    * [Decision Tree Regression](#)
 * [Requirements](#requirements)
 * [Implementation](#implementation)
     * [Constraint Handling](#constraint-handling)
     * [Multi-Objective Optimization](#multi-objective-optimization)
     * [Objective Function Handling](#objective-function-handling)
-      * [Internal Objective Function Example](internal-objective-function-example)
+      * [Internal Objective Function Example](#internal-objective-function-example)
 * [Example Implementations](#example-implementations)
     * [Basic Example](#basic-example)
     * [Realtime Graph](#realtime-graph)
@@ -23,6 +33,42 @@ Now featuring AntennaCAT hooks for GUI integration and user input handling.
 ## Bayesian Search
 
 Bayesian search, or Bayesian optimization, uses probabilistic models to efficiently optimize functions that are expensive to evaluate. It iteratively updates a Bayesian model of the objective function based on sampled evaluations, balancing exploration of uncertain regions with exploitation of promising areas. This approach is particularly effective in scenarios like hyperparameter tuning and experimental design where each evaluation is resource-intensive or time-consuming.
+
+
+## Surrogate Models
+A surrogate model in optimization, like Bayesian optimization, serves as a proxy for the actual objective function, which may be costly or impractical to evaluate directly. It approximates the behavior of the objective function using a simpler, computationally efficient model, such as Gaussian processes orthe other methods in this repository. This surrogate model is iteratively updated based on evaluations of the actual objective function, improving its accuracy over time. It allows optimization algorithms to make informed decisions about where to explore next in the search space, balancing between exploiting known good regions and exploring potentially better ones. Surrogate models are fundamental in speeding up optimization processes by reducing the number of expensive evaluations needed to find optimal solutions.
+
+
+### Radial Basis Function Network
+A Radial Basis Function Network (RBFN) is a type of artificial neural network that uses radial basis functions as activation functions. It consists of three layers: an input layer, a hidden layer with a non-linear RBF activation function (typically Gaussian), and a linear output layer. The hidden layer transforms the input data into a higher-dimensional space where it becomes linearly separable. RBFNs are commonly used for function approximation, time-series prediction, and classification tasks. They are valued for their simplicity, ease of training, and ability to model complex, non-linear relationships with a smaller number of neurons compared to other neural network architectures.
+
+
+### Gaussian Process
+
+A Gaussian process (GP) is a probabilistic model used primarily in machine learning and optimization. It defines a distribution over functions, where each point in the function's domain is assigned a Gaussian distribution. GPs are characterized by their mean function (typically assumed to be zero) and covariance function (kernel), which determines the relationships between different points. GPs are flexible and powerful tools for regression and uncertainty quantification, allowing predictions not only of the function values but also of the uncertainty associated with those predictions. They are particularly useful in Bayesian optimization, where they serve as surrogate models, providing a probabilistic framework to guide the search for optimal solutions efficiently.
+
+
+### Kriging
+Kriging, like Gaussian processes, is a technique used for interpolation and approximation of data points. Originating from geostatistics, Kriging models the spatial correlation between data points to predict values at unsampled locations. It uses a linear combination of data points with weights determined by spatial covariance functions (kriging models) to estimate values and quantify prediction uncertainty. Kriging is advantageous in fields like spatial statistics, where it provides accurate predictions and uncertainty estimates based on known data points' spatial relationships. In essence, Kriging is a specialized form of Gaussian process regression tailored for spatial datasets, emphasizing the spatial autocorrelation structure to improve prediction accuracy in geospatial applications and beyond.
+
+
+### Polynomial Regression
+Polynomial regression is a form of regression analysis where the relationship between the independent variable xx and the dependent variable yy is modeled as an nn-th degree polynomial function. Unlike linear regression, which assumes a linear relationship, polynomial regression can capture non-linear relationships between variables. 
+
+
+
+### Polynomial Chaos Expansion
+Polynomial Chaos Expansion (PCE) is a method used in uncertainty quantification and sensitivity analysis. It expresses a stochastic model's output as a series expansion in terms of orthogonal polynomials, typically Hermite, Legendre, or other families depending on the underlying probability distribution. Each polynomial corresponds to a different order of the stochastic variables, capturing the variability and uncertainty in the model's parameters or inputs. PCE provides a way to efficiently compute statistical moments, such as mean and variance, and quantify how uncertainties in input parameters propagate through the model to affect output variability
+
+
+### K-Nearest Neighbors Regression
+As part of a Bayesian optimizer, the K-Nearest Neighbors (KNN) model predicts the objective function's value at a new point based on the values of its k nearest neighbors in the training data. By using the distances and weights of these neighbors, it estimates the function value, guiding the optimizer to explore promising regions of the search space. KNN is valued for its simplicity and non-parametric nature, making it flexible for various optimization problems. However, it may struggle with high-dimensional data.
+
+### Decision Tree Regression
+
+Decision Tree Regression is a predictive modeling technique used for continuous target variables. It works by recursively splitting the data into subsets based on the feature that minimizes the mean squared error (MSE) at each split. Each internal node represents a feature, and each leaf node represents a predicted value, usually the mean of the target values in that region. This method captures non-linear relationships and is easy to interpret. However, it can overfit the training data, so techniques like pruning or using ensemble methods (e.g., Random Forests) are often employed to enhance its performance and generalization ability.
+
+
 
 ## Requirements
 
@@ -123,8 +169,6 @@ f(\mathbf{x}) = sin(5 * x^3) + cos(5 * x) * (1 - tanh(x^2))
 
 
 
-
-
 ## Example Implementations
 
 ### Basic Example
@@ -164,9 +208,44 @@ NOTE: if you close the graph as the code is running, the code will continue to r
 
 ## References
 
-This repo does not currently reference any code from papers for the Bayesian or Gaussian classes.
+[1] Wikipedia Contributors, “Himmelblau’s function,” Wikipedia, Dec. 29, 2023. https://en.wikipedia.org/wiki/Himmelblau%27s_function 
 
-For the original code base, see the [adaptive timestep PSO optimizer](https://github.com/jonathan46000/pso_python) by [jonathan46000](https://github.com/jonathan46000)
+[2] Wikipedia Contributors, “Bayesian optimization,” Wikipedia, Jul. 05, 2019. https://en.wikipedia.org/wiki/Bayesian_optimization
+
+[3] W. Wang, “Bayesian Optimization Concept Explained in Layman Terms,” Medium, Mar. 22, 2022. https://towardsdatascience.com/bayesian-optimization-concept-explained-in-layman-terms-1d2bcdeaf12f
+
+[4] C. Brecque, “The intuitions behind Bayesian Optimization with Gaussian Processes,” Medium, Apr. 02, 2021. https://towardsdatascience.com/the-intuitions-behind-bayesian-optimization-with-gaussian-processes-7e00fcc898a0
+
+[5] “Introduction to Bayesian Optimization (BO) — limbo 0.1 documentation,” resibots.eu. https://resibots.eu/limbo/guides/bo.html 
+
+[6] “Radial Basis Function Networks (RBFNs) with Python 3: A Comprehensive Guide – Innovate Yourself,” Nov. 03, 2023. https://innovationyourself.com/radial-basis-function-networks-rbfn/ 
+
+[7] Everton Gomede, PhD, “Radial Basis Functions Neural Networks: Unlocking the Power of Nonlinearity,” Medium, Jun. 06, 2023. https://medium.com/@evertongomede/radial-basis-functions-neural-networks-unlocking-the-power-of-nonlinearity-c67f6240a5bb
+
+[8] J. Luo, W. Xu and J. Chen, "A Novel Radial Basis Function (RBF) Network for Bayesian Optimization," 2021 IEEE 7th International Conference on Cloud Computing and Intelligent Systems (CCIS), Xi'an, China, 2021, pp. 250-254, doi: 10.1109/CCIS53392.2021.9754629.
+
+[9] Wikipedia Contributors, “Kriging,” Wikipedia, Oct. 16, 2018. https://en.wikipedia.org/wiki/Kriging
+
+
+[10] “Polynomial kernel,” Wikipedia, Oct. 02, 2019. https://en.wikipedia.org/wiki/Polynomial_kernel
+
+[11] A. Radhakrishnan, M. Luyten, G. Stefanakis, and C. Cai, “Lecture 3: Kernel Regression,” 2022. Available: https://web.mit.edu/modernml/course/lectures/MLClassLecture3.pdf
+
+[12] “Polynomial chaos,” Wikipedia, Mar. 19, 2024. https://en.wikipedia.org/wiki/Polynomial_chaos 
+
+[13] “Polynomial Chaos Expansion — Uncertainty Quantification,” dictionary.helmholtz-uq.de. https://dictionary.helmholtz-uq.de/content/PCE.html (accessed Jun. 28, 2024).
+
+[14] T. Srivastava, “Introduction to KNN, K-Nearest Neighbors : Simplified,” Analytics Vidhya, Mar. 07, 2019. https://www.analyticsvidhya.com/blog/2018/03/introduction-k-neighbours-algorithm-clustering/
+
+[15] Wikipedia Contributors, “k-nearest neighbors algorithm,” Wikipedia, Mar. 19, 2019. https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm
+ 
+[16] “Python | Decision Tree Regression using sklearn,” GeeksforGeeks, Oct. 04, 2018. https://www.geeksforgeeks.org/python-decision-tree-regression-using-sklearn/
+
+[17] “Decision Tree Regression,” Saedsayad.com, 2019. https://www.saedsayad.com/decision_tree_reg.htm
+
+[18] Wikipedia Contributors, “Decision tree learning,” Wikipedia, Jun. 12, 2019. https://en.wikipedia.org/wiki/Decision_tree_learning
+
+
 
 ## Publications and Integration
 This software works as a stand-alone implementation, and as one of the optimizers integrated into AntennaCAT.
