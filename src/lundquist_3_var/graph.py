@@ -41,16 +41,16 @@ def pareto_front(X, Y, minimize=True):
         pareto_front_Y_max = float('inf')
         for x, y in sorted(zip(X, Y)):
             if y < pareto_front_Y_max:
-                pareto_front_X.append(x[0])
-                pareto_front_Y.append(y[0])
+                pareto_front_X.append(x)
+                pareto_front_Y.append(y)
                 pareto_front_Y_max = y
     else:
         # Find Pareto front for maximizing objectives
         pareto_front_Y_min = float('-inf')
         for x, y in sorted(zip(X, Y), reverse=True):
             if y > pareto_front_Y_min:
-                pareto_front_X.append(x[0])
-                pareto_front_Y.append(y[0])
+                pareto_front_X.append(x)
+                pareto_front_Y.append(y)
                 pareto_front_Y_min = y
 
     return pareto_front_X, pareto_front_Y

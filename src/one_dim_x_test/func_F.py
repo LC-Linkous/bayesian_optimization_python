@@ -13,7 +13,7 @@ import numpy as np
 import time
 
 def func_F(X, NO_OF_OUTS=1):
-    F = np.zeros((NO_OF_OUTS, 1))
+    F = np.zeros((NO_OF_OUTS))
     noErrors = True
     try:
         x = X[0]

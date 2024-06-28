@@ -14,7 +14,7 @@
 import numpy as np
 
 def func_F(X, NO_OF_OUTS=2):
-    F = np.zeros((NO_OF_OUTS, 1))
+    F = np.zeros((NO_OF_OUTS))
     noErrors = True
     try:
         F[0] = (X[0]-0.5) ** 2 + (X[1]-0.1) ** 2
