@@ -3,7 +3,7 @@ Repository for demoing the effect of various surrogate models on Bayesian Optimi
 
 The class format is based off of the [adaptive timestep PSO optimizer](https://github.com/jonathan46000/pso_python) by [jonathan46000](https://github.com/jonathan46000) for data collection baseline. This repo does not feature any PSO optimization. Instead, the format has been used to retain modularity with other optimizers.
 
-The surrogate models are designed to interface with the optimizers in the AntennaCAT suite, but have not been exhaustively tested as of June. 24 while they are in parallel development. See [References](#references) for the running list of references as optimizers and surrogate models are added/edited, and features are updated.
+The surrogate models are designed to interface with the optimizers in the AntennaCAT suite, but have not been exhaustively tested as of June. 2024 while they are in parallel development. See [References](#references) for the running list of references as optimizers and surrogate models are added/edited, and features are updated.
 
 Now featuring AntennaCAT hooks for GUI integration and user input handling.
 
@@ -15,8 +15,8 @@ Now featuring AntennaCAT hooks for GUI integration and user input handling.
     * [Kriging](#kriging)
     * [Polynomial Regression](#polynomial-regression)
     * [Polynomial Chaos Expansion](#polynomial-chaos-expansion)
-    * [K-Nearest Neighbors Regression](#)
-    * [Decision Tree Regression](#)
+    * [K-Nearest Neighbors Regression](#k-nearest-neighbors-regression)
+    * [Decision Tree Regression](#decision-tree-regression)
 * [Requirements](#requirements)
 * [Implementation](#implementation)
     * [Constraint Handling](#constraint-handling)
