@@ -15,30 +15,27 @@
 
 import numpy as np
 import time
-#import surrogate model
-from surrogate_models.gaussian_process import GaussianProcess
 
-#import optimizer
+# OPTIMIZER
 from bayesian_optimizer import BayesianOptimization
 
-# # import objective function (examples) - uncomment to test a function
-# # single objective, 2D input
-#import himmelblau.configs_F as func_configs
+# SURROGATE MODEL
+from surrogate_models.RBF_network import RBFNetwork
+from surrogate_models.gaussian_process import GaussianProcess
+from surrogate_models.kriging_regression import Kriging
+from surrogate_models.polynomial_regression import PolynomialRegression
+from surrogate_models.polynomial_chaos_expansion import PolynomialChaosExpansion
+from surrogate_models.KNN_regression import KNNRegression
+from surrogate_models.decision_tree_regression import DecisionTreeRegression
 
-# single objective, 1D input
-#import one_dim_x_test.configs_F as func_configs
-
-# # multi objective function
-import lundquist_3_var.configs_F as func_configs
+# OBJECTIVE FUNCTION
+#import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
+#import himmelblau.configs_F as func_configs         # single objective, 2D input
+import lundquist_3_var.configs_F as func_configs    # multi objective function
 
 class Test():
     def __init__(self):
-        # LB = [[-5, -5]]           # Lower boundaries
-        # UB = [[5, 5]]             # Upper boundaries
-        # OUT_VARS = 1              # Number of output variables (y-values)
-        # TARGETS = [0]             # Target values for output
-        # E_TOL = 10 ** -6          # Convergence Tolerance
-        # MAXIT = 200               # Maximum allowed iterations
+        # OBJECTIVE FUNCTION CONFIGURATIONS FROM FILE
 
         LB = func_configs.LB                    # Lower boundaries
         UB = func_configs.UB                    # Upper boundaries
@@ -47,12 +44,13 @@ class Test():
         TARGETS = func_configs.TARGETS          # Target values for output
         GLOBAL_MIN = func_configs.GLOBAL_MIN    # Global minima, if they exist
 
-        E_TOL = 10 ** -6                  # Convergence Tolerance. For Sweep, this should be a larger value
-        MAXIT = 300                       # Maximum allowed iterations
-
         # Objective function dependent variables
         self.func_F = func_configs.OBJECTIVE_FUNC  # objective function
         self.constr_F = func_configs.CONSTR_FUNC   # constraint function
+
+        # OPTIMIZER VARIABLES        
+        E_TOL = 10 ** -6                  # Convergence Tolerance. For Sweep, this should be a larger value
+        MAXIT = 1000                      # Maximum allowed iterations
 
         # handling multiple types of graphs
         self.in_vars = IN_VARS
@@ -63,9 +61,25 @@ class Test():
         xi = 0.01
         n_restarts = 25
 
+        # SURROGATE MODEL VARS
+        # RBF Network vars
+        RBF_kernel  = 'gaussian' #options: 'gaussian', 'multiquadric'
+        RBF_epsilon = 1.0
         # Gaussian Process vars
-        noise = 1e-10
-        length_scale = 1.0
+        GP_noise = 1e-10
+        GP_length_scale = 1.0
+        # Kriging vars
+        K_noise = 1e-10
+        K_length_scale = 1.0        
+        # Polynomial Regression vars
+        PR_degree = 5
+        # Polynomial Chaos Expansion vars
+        PC_degree = 5 
+        # KNN regression vars
+        KNN_n_neighbors=3
+        KNN_weights='uniform'  #options: 'uniform', 'distance'
+        # Decision Tree Regression vars
+        DTR_max_depth = 5  # options: ints
 
         self.best_eval = 9999    # set higher than normal because of the potential for missing the target
 
@@ -82,13 +96,19 @@ class Test():
 
         self.allow_update = True        # Allow objective call to update state 
 
-        self.sm = GaussianProcess(length_scale=length_scale,noise=noise)  # select the surrogate model
-        self.optimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
-                                                        self.func_F, self.constr_F,
-                                                        init_num_points=init_num_points,  
-                                                        xi = xi, n_restarts=n_restarts,
-                                                        parent=parent, detailedWarnings=detailedWarnings)  
+        #self.sm = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)       
+        #self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
+        self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise)  # select the surrogate model
+        #self.sm = PolynomialRegression(degree=PR_degree)
+        #self.sm = PolynomialChaosExpansion(degree=PC_degree)
+        #self.sm = KNNRegression(n_neighbors=KNN_n_neighbors, weights=KNN_weights)
+        #self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
 
+        self.bayesOptimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
+                                                    self.func_F, self.constr_F, 
+                                                    init_points=init_num_points, 
+                                                    xi = xi, n_restarts=n_restarts, 
+                                                    parent=parent, detailedWarnings=detailedWarnings)
 
 
     def debug_message_printout(self, txt):
