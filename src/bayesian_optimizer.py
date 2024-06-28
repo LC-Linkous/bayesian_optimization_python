@@ -205,11 +205,6 @@ class BayesianOptimization:
     # OPTIMIZER FUNCTIONS
     def expected_improvement(self, X):
         X = np.atleast_2d(X)
-        # print("EXPECTED IMPROVEMENT")
-        # print("X")
-        # print(X)
-        # print("self.M")
-        # print(self.M)
 
         mu, sigma = self.model_predict(X) #mean and standard deviation
         mu_sample, _ = self.model_predict(self.M) #predict using sampled locations
