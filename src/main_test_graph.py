@@ -149,21 +149,12 @@ class TestGraph():
          
 
     def update_plot(self, X_sample, Y_sample):
-        # print("UPDATE PLOT")
-        # print("X")
-        # print(X_sample)
-        # print("Y")
-        # print(Y_sample)
-
-
-
         #check if plot exists or has been closed out.
         # return if closed so the program keeps running
         if plt.fignum_exists(self.figNum) == False:
             return
         
         if self.in_vars == 1:
-            # print(Y_sample)
             self.plot_1D(X_sample, Y_sample)
         elif self.in_vars == 2:
             if self.out_vars == 1: #single objective
@@ -394,15 +385,6 @@ class TestGraph():
 
 
     def run(self):
-
-
-        # set up the initial sample points  (randomly generated in this example)
-        #self.bayesOptimizer.initialize_starting_points(self.init_num_points)
-        # # get the sample points out (to ensure standard formatting)
-        # x_sample, y_sample = self.bayesOptimizer.get_sample_points()
-        # # fit GP model.
-        # self.sm.fit(x_sample, y_sample) #, self.out_vars)
-
 
         # instantiation of particle swarm optimizer 
         while not self.bayesOptimizer.complete():
