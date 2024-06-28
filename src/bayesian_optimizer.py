@@ -22,6 +22,7 @@ class BayesianOptimization:
     def __init__(self,lbound, ubound, 
                 output_size, targets, E_TOL, maxit,
                 obj_func, constr_func,
+                init_points=2, 
                 xi = 0.01, n_restarts=25,
                 parent=None, detailedWarnings=False):
         
@@ -59,10 +60,10 @@ class BayesianOptimization:
 
             
             if heightl == 1:
-                lbound = np.vstack(lbound)
+                lbound = lbound
         
             if heightu == 1:
-                ubound = np.vstack(ubound)
+                ubound = ubound
 
             self.lbound = lbound
             self.ubound = ubound
@@ -90,10 +91,10 @@ class BayesianOptimization:
 
             self.M = []
             self.output_size = output_size
-            self.Gb = sys.maxsize*np.ones((np.max([heightl, widthl]),1))
-            self.F_Gb = sys.maxsize*np.ones((output_size,1))
-            self.F_Pb = [] #sys.maxsize*np.ones((output_size,1)) #rather than making the limit the max iterations, increment this list.     
-            self.targets = np.vstack(np.array(targets))
+            self.Gb = sys.maxsize*np.ones((1,np.max([heightl, widthl])))   
+            self.F_Gb = sys.maxsize*np.ones((1,output_size))
+            self.F_Pb = []  
+            self.targets = np.array(targets)    
             self.maxit = maxit                       
             self.E_TOL = E_TOL
             self.obj_func = obj_func                                             
@@ -105,29 +106,47 @@ class BayesianOptimization:
             self.xi = xi
             self.n_restarts = n_restarts
             self.new_point = []
+    
+
+
+            #create the initial pts
+            self.initialize_starting_points(init_points)
+
+            # get the sample points out (to ensure standard formatting)
+            x_sample, y_sample = self.get_sample_points()
+            # fit GP model.
+            self.parent.fit_model(x_sample, y_sample)
+
 
 
     def initialize_starting_points(self, init_num_points=10):
         # Initialize random initial points
         if init_num_points>0:
-            self.M = self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], (init_num_points, len(self.ubound)))
-            tmp_y = []
-            for i in range(0,init_num_points):
-                y, noError = self.obj_func(self.M[i], self.output_size)  # Cumulative Fvals
+            # first point
+            rand_pts = self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], (1, len(self.ubound))).reshape(1,len(self.ubound))
+            y, noError = self.obj_func(rand_pts[0], self.output_size)  # Cumulative Fvals
+            if noError == True:
+                self.M = rand_pts
+                self.F_Pb = np.vstack([y])
+            else:
+                print("ERROR: initial point creation issue")
+       
+            # rest of the points
+            for i in range(2,init_num_points+1):
+                new_M = self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], (1, len(self.ubound))).reshape(1,len(self.ubound))
+                y, noError = self.obj_func(new_M[0], self.output_size) 
                 if noError == True:
-                    tmp_y.append(y)
+                    self.M = np.vstack([self.M, new_M])
+                    self.F_Pb = np.vstack([self.F_Pb,y])
+             
                 else:
                     print("ERROR: objective function error when initilaizing random points")
 
-            #set the fitness values to an array            
-            self.F_Pb = np.array(tmp_y)
-
             self.is_fitted = False
             # tracking the iterations (samples)
-            self.iter=init_num_points
+            # self.iter=init_num_points
             print("Model initialized with " + str(init_num_points) + " points. \
             The interation counter will start from " + str(self.iter))
-
 
     # SURROGATE MODEL CALLS
     def fit_model(self, x, y):
@@ -186,6 +205,12 @@ class BayesianOptimization:
     # OPTIMIZER FUNCTIONS
     def expected_improvement(self, X):
         X = np.atleast_2d(X)
+        # print("EXPECTED IMPROVEMENT")
+        # print("X")
+        # print(X)
+        # print("self.M")
+        # print(self.M)
+
         mu, sigma = self.model_predict(X) #mean and standard deviation
         mu_sample, _ = self.model_predict(self.M) #predict using sampled locations
         mu_sample_opt = np.min(mu_sample)
@@ -193,7 +218,8 @@ class BayesianOptimization:
         imp = mu_sample_opt - mu - self.xi
 
         #Standardize Improvement
-        Z = np.where(sigma != 0, imp / sigma, 0)
+        #Z = np.where(sigma != 0, imp / sigma, 0)
+        Z = np.divide(imp, sigma, out=np.zeros_like(imp), where=sigma!=0)
         ei = imp * (1 + np.tanh(Z))
         # # This introduces more stability into the model, 
         # # but the tested problems do much worse with exploration

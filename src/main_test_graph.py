@@ -21,25 +21,28 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 
-#import surrogate model
-from gaussian_process import GaussianProcess
-
-#import optimizer
+# OPTIMIZER
 from bayesian_optimizer import BayesianOptimization
 
-# # import objective function (examples) - uncomment to test a function
-# # single objective, 2D input
-#import himmelblau.configs_F as func_configs
+# SURROGATE MODEL
+from surrogate_models.RBF_network import RBFNetwork
+from surrogate_models.gaussian_process import GaussianProcess
+from surrogate_models.kriging_regression import Kriging
+from surrogate_models.polynomial_regression import PolynomialRegression
+from surrogate_models.polynomial_chaos_expansion import PolynomialChaosExpansion
+from surrogate_models.KNN_regression import KNNRegression
+from surrogate_models.decision_tree_regression import DecisionTreeRegression
 
-# single objective, 1D input
-#import one_dim_x_test.configs_F as func_configs
-
-# # multi objective function
-import lundquist_3_var.configs_F as func_configs
+# OBJECTIVE FUNCTION
+#import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
+#import himmelblau.configs_F as func_configs         # single objective, 2D input
+import lundquist_3_var.configs_F as func_configs    # multi objective function
 
 
 class TestGraph():
     def __init__(self):
+
+        # OBJECTIVE FUNCTION CONFIGURATIONS FROM FILE
 
         LB = func_configs.LB                    # Lower boundaries
         UB = func_configs.UB                    # Upper boundaries
@@ -48,25 +51,43 @@ class TestGraph():
         TARGETS = func_configs.TARGETS          # Target values for output
         GLOBAL_MIN = func_configs.GLOBAL_MIN    # Global minima, if they exist
 
-        E_TOL = 10 ** -6                  # Convergence Tolerance. For Sweep, this should be a larger value
-        MAXIT = 1000                      # Maximum allowed iterations
-
         # Objective function dependent variables
         self.func_F = func_configs.OBJECTIVE_FUNC  # objective function
         self.constr_F = func_configs.CONSTR_FUNC   # constraint function
 
-        # handling multiple types of graphs
+        # OPTIMIZER VARIABLES        
+        E_TOL = 10 ** -6                  # Convergence Tolerance. For Sweep, this should be a larger value
+        MAXIT = 1000                      # Maximum allowed iterations
+
+        # for handling multiple types of graphs
         self.in_vars = IN_VARS
         self.out_vars = OUT_VARS
 
         # Bayesian optimizer tuning params
-        self.init_num_points = 2 
+        init_num_points = 2 
         xi = 0.01
         n_restarts = 25
 
+        # SURROGATE MODEL VARS
+        # RBF Network vars
+        RBF_kernel  = 'gaussian' #options: 'gaussian', 'multiquadric'
+        RBF_epsilon = 1.0
         # Gaussian Process vars
-        noise = 1e-10
-        length_scale = 1.1
+        GP_noise = 1e-10
+        GP_length_scale = 1.0
+        # Kriging vars
+        K_noise = 1e-10
+        K_length_scale = 1.0        
+        # Polynomial Regression vars
+        PR_degree = 5
+        # Polynomial Chaos Expansion vars
+        PC_degree = 5 
+        # KNN regression vars
+        KNN_n_neighbors=3
+        KNN_weights='uniform'  #options: 'uniform', 'distance'
+        # Decision Tree Regression vars
+        DTR_max_depth = 5  # options: ints
+
 
         #plotting vars - make sure plots and samples match
         self.mesh_sample_dim = 10
@@ -89,16 +110,24 @@ class TestGraph():
         self.allow_update = True        # Allow objective call to update state 
 
 
-        
-        self.sm = GaussianProcess(length_scale=length_scale,noise=noise)  # select the surrogate model
+        #self.sm = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)       
+        #self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
+        #self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise)  # select the surrogate model
+        #self.sm = PolynomialRegression(degree=PR_degree)
+        #self.sm = PolynomialChaosExpansion(degree=PC_degree)
+        #self.sm = KNNRegression(n_neighbors=KNN_n_neighbors, weights=KNN_weights)
+        self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
+
         self.bayesOptimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
                                                     self.func_F, self.constr_F, 
-                                                    xi = xi, n_restarts=n_restarts,
-                                                    parent=parent, detailedWarnings=detailedWarnings)  
+                                                    init_points=init_num_points, 
+                                                    xi = xi, n_restarts=n_restarts, 
+                                                    parent=parent, detailedWarnings=detailedWarnings)
+        
 
         # Matplotlib setup
         # # Initialize plot
-        self.fig = plt.figure(figsize=(10, 6))
+        self.fig = plt.figure(figsize=(10, 4))
 
         self.figNum = self.fig.number
         self.first_run = True
@@ -120,13 +149,21 @@ class TestGraph():
          
 
     def update_plot(self, X_sample, Y_sample):
+        # print("UPDATE PLOT")
+        # print("X")
+        # print(X_sample)
+        # print("Y")
+        # print(Y_sample)
+
+
+
         #check if plot exists or has been closed out.
         # return if closed so the program keeps running
         if plt.fignum_exists(self.figNum) == False:
             return
         
         if self.in_vars == 1:
-            print(Y_sample)
+            # print(Y_sample)
             self.plot_1D(X_sample, Y_sample)
         elif self.in_vars == 2:
             if self.out_vars == 1: #single objective
@@ -253,7 +290,7 @@ class TestGraph():
         # SURROGATE MODEL PLOT
         self.ax3.plot_surface(X0, X1, Y_mu_plot, cmap='viridis', alpha=0.7)
         self.ax3.scatter(X_sample[:, 0], X_sample[:, 1], Y_sample, c='r', s=50)
-        self.ax3.set_title('Surrogate Model (GP Mean), Fitted to Samples')  
+        self.ax3.set_title('Surrogate Model, \n Fitted to Samples')  
 
 
         plt.draw()
@@ -322,33 +359,8 @@ class TestGraph():
         if self.ctr == 0:
             time.sleep(3)
         self.ctr = self.ctr + 1
-
-
-    def pareto_front(X, Y, minimize=True):
-        pareto_front_X = []
-        pareto_front_Y = []
-
-        if minimize:
-            # Find Pareto front for minimizing objectives
-            pareto_front_Y_max = float('inf')
-            for x, y in sorted(zip(X, Y)):
-                if y < pareto_front_Y_max:
-                    pareto_front_X.append(x)
-                    pareto_front_Y.append(y)
-                    pareto_front_Y_max = y
-        else:
-            # Find Pareto front for maximizing objectives
-            pareto_front_Y_min = float('-inf')
-            for x, y in sorted(zip(X, Y), reverse=True):
-                if y > pareto_front_Y_min:
-                    pareto_front_X.append(x)
-                    pareto_front_Y.append(y)
-                    pareto_front_Y_min = y
-
-        return pareto_front_X, pareto_front_Y
-
-   
-   
+ 
+  
     # SURROGATE MODEL FUNCS
     def fit_model(self, x, y):
         # call out to parent class to use surrogate model
@@ -385,11 +397,11 @@ class TestGraph():
 
 
         # set up the initial sample points  (randomly generated in this example)
-        self.bayesOptimizer.initialize_starting_points(self.init_num_points)
-        # get the sample points out (to ensure standard formatting)
-        x_sample, y_sample = self.bayesOptimizer.get_sample_points()
-        # fit GP model.
-        self.sm.fit(x_sample, y_sample) #, self.out_vars)
+        #self.bayesOptimizer.initialize_starting_points(self.init_num_points)
+        # # get the sample points out (to ensure standard formatting)
+        # x_sample, y_sample = self.bayesOptimizer.get_sample_points()
+        # # fit GP model.
+        # self.sm.fit(x_sample, y_sample) #, self.out_vars)
 
 
         # instantiation of particle swarm optimizer 

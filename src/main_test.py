@@ -16,7 +16,7 @@
 import numpy as np
 import time
 #import surrogate model
-from gaussian_process import GaussianProcess
+from surrogate_models.gaussian_process import GaussianProcess
 
 #import optimizer
 from bayesian_optimizer import BayesianOptimization
@@ -59,7 +59,7 @@ class Test():
         self.out_vars = OUT_VARS
 
         # Bayesian optimizer tuning params
-        self.init_num_points = 2 
+        init_num_points = 2 
         xi = 0.01
         n_restarts = 25
 
@@ -83,10 +83,12 @@ class Test():
         self.allow_update = True        # Allow objective call to update state 
 
         self.sm = GaussianProcess(length_scale=length_scale,noise=noise)  # select the surrogate model
-        self.bayesOptimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
-                                                    self.func_F, self.constr_F, 
-                                                    xi = xi, n_restarts=n_restarts,
-                                                    parent=parent, detailedWarnings=detailedWarnings)  
+        self.optimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
+                                                        self.func_F, self.constr_F,
+                                                        init_num_points=init_num_points,  
+                                                        xi = xi, n_restarts=n_restarts,
+                                                        parent=parent, detailedWarnings=detailedWarnings)  
+
 
 
     def debug_message_printout(self, txt):
@@ -117,13 +119,6 @@ class Test():
 
 
     def run(self):        
-        # set up the initial sample points  (randomly generated in this example)
-        self.bayesOptimizer.initialize_starting_points(self.init_num_points)
-        # get the sample points out (to ensure standard formatting)
-        x_sample, y_sample = self.bayesOptimizer.get_sample_points()
-        # fit GP model.
-        self.sm.fit(x_sample, y_sample)
-
 
         # instantiation of particle swarm optimizer 
         while not self.bayesOptimizer.complete():
