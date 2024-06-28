@@ -2,7 +2,7 @@
 
 ##--------------------------------------------------------------------\
 #   bayesian_optimization_python
-#   './bayesian_optimization_python/src/surrogate_models/main_test_graph.py'
+#   './bayesian_optimization_python/src/surrogate_models/gaussian_process.py'
 #   Guassian Process surrogate model for optimization. 
 #
 #   Author(s): Lauren Linkous 

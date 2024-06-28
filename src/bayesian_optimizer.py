@@ -2,7 +2,7 @@
 
 ##--------------------------------------------------------------------\
 #   bayesian_optimization_python
-#   './bayesian_optimization_python/src/main_test_graph.py'
+#   './bayesian_optimization_python/src/bayesian_optimizer.py'
 #   
 #   Class for bayesian optimizer. Controlled by a driving test class as
 #   a parent, which also passes arguments to the surrogate model.
