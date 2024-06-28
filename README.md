@@ -32,37 +32,44 @@ Now featuring AntennaCAT hooks for GUI integration and user input handling.
 
 ## Bayesian Search
 
-Bayesian search, or Bayesian optimization, uses probabilistic models to efficiently optimize functions that are expensive to evaluate. It iteratively updates a Bayesian model of the objective function based on sampled evaluations, balancing exploration of uncertain regions with exploitation of promising areas. This approach is particularly effective in scenarios like hyperparameter tuning and experimental design where each evaluation is resource-intensive or time-consuming.
-
+Bayesian search, or Bayesian optimization, uses probabilistic models to efficiently optimize functions that are computationally expensive or resource intensive to evaluate. It iteratively updates a Bayesian model of the objective function based on sampled evaluations (of the objective function). 
 
 ## Surrogate Models
-A surrogate model in optimization, like Bayesian optimization, serves as a proxy for the actual objective function, which may be costly or impractical to evaluate directly. It approximates the behavior of the objective function using a simpler, computationally efficient model, such as Gaussian processes orthe other methods in this repository. This surrogate model is iteratively updated based on evaluations of the actual objective function, improving its accuracy over time. It allows optimization algorithms to make informed decisions about where to explore next in the search space, balancing between exploiting known good regions and exploring potentially better ones. Surrogate models are fundamental in speeding up optimization processes by reducing the number of expensive evaluations needed to find optimal solutions.
+A surrogate model in optimization serves as a proxy for the actual objective function, which may be costly or impractical to evaluate directly. It approximates the behavior of the objective function using a simpler, computationally efficient model, such as the Gaussian Process (GP) model included in this repository. This surrogate model is iteratively updated based on evaluations of the actual objective function, improving its accuracy over time. It allows optimization algorithms to make informed decisions about where to explore next in the search space, balancing between exploiting known good regions and exploring potentially better ones. Surrogate models are fundamental in speeding up optimization processes by reducing the number of expensive evaluations needed to find optimal solutions.
+
+For comparison and experimental purproses, there is a small library of surrogate models included in this repository that can be used with the included Bayesian optimizer. They are:
 
 
 ### Radial Basis Function Network
-A Radial Basis Function Network (RBFN) is a type of artificial neural network that uses radial basis functions as activation functions. It consists of three layers: an input layer, a hidden layer with a non-linear RBF activation function (typically Gaussian), and a linear output layer. The hidden layer transforms the input data into a higher-dimensional space where it becomes linearly separable. RBFNs are commonly used for function approximation, time-series prediction, and classification tasks. They are valued for their simplicity, ease of training, and ability to model complex, non-linear relationships with a smaller number of neurons compared to other neural network architectures.
+A Radial Basis Function Network (RBFN) is a type of artificial neural network that uses radial basis functions as activation functions. It consists of three layers: an input layer, a hidden layer with a non-linear RBF activation function (typically Gaussian), and a linear output layer. The simple approach in this repo uses numpy and basic matrix math rather than a ML specific library. RBFNs are commonly used for function approximation, time-series prediction, and classification tasks. They are valued for their simplicity, ease of training, and ability to model complex, non-linear relationships with a smaller number of neurons compared to other neural network architectures (which means a smaller matrix).
 
 
 ### Gaussian Process
 
-A Gaussian process (GP) is a probabilistic model used primarily in machine learning and optimization. It defines a distribution over functions, where each point in the function's domain is assigned a Gaussian distribution. GPs are characterized by their mean function (typically assumed to be zero) and covariance function (kernel), which determines the relationships between different points. GPs are flexible and powerful tools for regression and uncertainty quantification, allowing predictions not only of the function values but also of the uncertainty associated with those predictions. They are particularly useful in Bayesian optimization, where they serve as surrogate models, providing a probabilistic framework to guide the search for optimal solutions efficiently.
+A Gaussian process (GP) is a probabilistic model used primarily in machine learning and optimization. It defines a distribution over functions, where each point in the function's domain is assigned a Gaussian distribution. GPs are characterized by their mean function (typically assumed to be zero) and covariance function (kernel), which determines the relationships between different points. GPs are flexible and powerful tools for regression and uncertainty quantification, allowing predictions not only of the function values but also of the uncertainty associated with those predictions. 
 
 
 ### Kriging
-Kriging, like Gaussian processes, is a technique used for interpolation and approximation of data points. Originating from geostatistics, Kriging models the spatial correlation between data points to predict values at unsampled locations. It uses a linear combination of data points with weights determined by spatial covariance functions (kriging models) to estimate values and quantify prediction uncertainty. Kriging is advantageous in fields like spatial statistics, where it provides accurate predictions and uncertainty estimates based on known data points' spatial relationships. In essence, Kriging is a specialized form of Gaussian process regression tailored for spatial datasets, emphasizing the spatial autocorrelation structure to improve prediction accuracy in geospatial applications and beyond.
+
+Kriging, like Gaussian processes, is a technique used for interpolation and approximation of data points. Kriging models the spatial correlation between data points to predict values at unsampled locations. It uses a linear combination of data points with weights determined by spatial covariance functions (kriging models) to estimate values and quantify prediction uncertainty. Kriging is advantageous in fields like spatial statistics, where it provides accurate predictions and uncertainty estimates based on known data points' spatial relationships. 
+
+Kriging is a specialized form of Gaussian process regression tailored for spatial datasets, emphasizing the spatial autocorrelation structure to improve prediction accuracy in geospatial applications and beyond.
 
 
 ### Polynomial Regression
-Polynomial regression is a form of regression analysis where the relationship between the independent variable xx and the dependent variable yy is modeled as an nn-th degree polynomial function. Unlike linear regression, which assumes a linear relationship, polynomial regression can capture non-linear relationships between variables. 
+
+Polynomial regression is a form of regression analysis where the relationship between the independent variable x and the dependent variable y is modeled as an n-th degree polynomial function. Unlike linear regression, which assumes a linear relationship, polynomial regression can capture non-linear relationships between variables. 
 
 
 
 ### Polynomial Chaos Expansion
+
 Polynomial Chaos Expansion (PCE) is a method used in uncertainty quantification and sensitivity analysis. It expresses a stochastic model's output as a series expansion in terms of orthogonal polynomials, typically Hermite, Legendre, or other families depending on the underlying probability distribution. Each polynomial corresponds to a different order of the stochastic variables, capturing the variability and uncertainty in the model's parameters or inputs. PCE provides a way to efficiently compute statistical moments, such as mean and variance, and quantify how uncertainties in input parameters propagate through the model to affect output variability
 
 
 ### K-Nearest Neighbors Regression
-As part of a Bayesian optimizer, the K-Nearest Neighbors (KNN) model predicts the objective function's value at a new point based on the values of its k nearest neighbors in the training data. By using the distances and weights of these neighbors, it estimates the function value, guiding the optimizer to explore promising regions of the search space. KNN is valued for its simplicity and non-parametric nature, making it flexible for various optimization problems. However, it may struggle with high-dimensional data.
+
+As part of a Bayesian optimizer, the K-Nearest Neighbors (KNN) model predicts the objective function's value at a new point based on the values of its k nearest neighbors in the training data. By using the distances and weights of these neighbors, it estimates the function value, guiding the optimizer to explore promising regions of the search space. KNN is valued for its simplicity and non-parametric nature, making it flexible for various optimization problems. However, it may struggle with high-dimensional data. It does not do well on the Himmelblau function as the parameters are currently set.
 
 ### Decision Tree Regression
 
