@@ -20,8 +20,6 @@ def func_F(X, NO_OF_OUTS=1):
         F = np.sin(5 * x**3) + np.cos(5 * x) * (1 - np.tanh(x ** 2))
     except Exception as e:
         print(e)
-        # print("X!")
-        # print(X)
         noErrors = False
 
     return [F], noErrors

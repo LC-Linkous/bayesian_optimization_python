@@ -30,8 +30,8 @@ from surrogate_models.decision_tree_regression import DecisionTreeRegression
 
 # OBJECTIVE FUNCTION
 #import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
-#import himmelblau.configs_F as func_configs         # single objective, 2D input
-import lundquist_3_var.configs_F as func_configs    # multi objective function
+import himmelblau.configs_F as func_configs         # single objective, 2D input
+#import lundquist_3_var.configs_F as func_configs    # multi objective function
 
 class Test():
     def __init__(self):
