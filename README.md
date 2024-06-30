@@ -22,7 +22,7 @@ Now featuring AntennaCAT hooks for GUI integration and user input handling.
     * [Constraint Handling](#constraint-handling)
     * [Multi-Objective Optimization](#multi-objective-optimization)
     * [Objective Function Handling](#objective-function-handling)
-      * [Internal Objective Function Example](#internal-objective-function-example)
+      * [Internal Objective Function Examples](#internal-objective-function-examples)
 * [Example Implementations](#example-implementations)
     * [Basic Example](#basic-example)
     * [Realtime Graph](#realtime-graph)
@@ -112,7 +112,7 @@ The no preference method of multi-objective optimization, but a Pareto Front is 
 The optimizer minimizes the absolute value of the difference from the target outputs and the evaluated outputs. Future versions may include options for function minimization absent target values. 
 
 
-#### Internal Objective Function Example
+#### Internal Objective Function Examples
 
 There are three functions included in the repository:
 1) Himmelblau's function, which takes 2 inputs and has 1 output
