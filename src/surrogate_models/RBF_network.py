@@ -16,6 +16,7 @@ class RBFNetwork:
     def __init__(self, kernel='gaussian', epsilon=1.0):
         self.kernel = kernel
         self.epsilon = epsilon
+        self.last_predictions  = []
         self.centers = None
         self.weights = None
         self.is_fitted = False
@@ -46,11 +47,21 @@ class RBFNetwork:
         self.is_fitted = True
 
     def predict(self, X, out_vars=None):
+        noErrors = True
         if not self.is_fitted:
             print("ERROR: RBFNetwork model is not fitted yet")
-
-        Phi = self._compute_design_matrix(X)
-        predictions = np.dot(Phi, self.weights)
-        variance = np.zeros_like(predictions)  # No variance
+            noErrors = False
         
-        return predictions, variance
+        try:
+            Phi = self._compute_design_matrix(X)
+            self.last_predictions = np.dot(Phi, self.weights)
+        except: 
+            self.last_predictions = []
+            noErrors
+        return self.last_predictions , noErrors
+
+    def calculate_variance(self):
+        #used for calculating expected improvement, but not applying objective func
+        # use the last predictions so not calculating everything twice
+        variance = np.zeros_like(self.last_predictions)  # No variance
+        return variance

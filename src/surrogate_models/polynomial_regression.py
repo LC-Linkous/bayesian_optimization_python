@@ -14,6 +14,7 @@ import numpy as np
 class PolynomialRegression:
     def __init__(self, degree=2):
         self.degree = degree
+        self.mean = []
         self.coefficients = None
         self.is_fitted = False
 
@@ -45,20 +46,29 @@ class PolynomialRegression:
         self.is_fitted = True
 
     def predict(self, X, out_vars=None):
+        noErrors = True
         if not self.is_fitted:
             print("PolynomialRegression model is not fitted yet")
-
+            noErrors = False
         X = np.atleast_2d(X)
 
-        X_poly = self._polynomial_features(X)
+        try: 
+            X_poly = self._polynomial_features(X)
+            
+            # Reshape coefficients to match dimensions for matrix multiplication
+            reshaped_coefficients = self.coefficients.reshape((self.coefficients.shape[0], -1))
+                
+            mean = np.dot(X_poly, reshaped_coefficients)
+            
+            self.mean = mean.reshape((X_poly.shape[0], -1))
+        except:
+            self.mean = []
+            noErrors = False
         
-        # Reshape coefficients to match dimensions for matrix multiplication
-        reshaped_coefficients = self.coefficients.reshape((self.coefficients.shape[0], -1))
-              
-        mean = np.dot(X_poly, reshaped_coefficients)
-        
-        mean = mean.reshape((X_poly.shape[0], -1))
-        variance = np.zeros_like(mean)  # No variance
-        
-        return mean, variance
+        return self.mean, noErrors
 
+    def calculate_variance(self):
+        #used for calculating expected improvement, but not applying objective func
+        # use the last predictions so not calculating everything twice
+        variance = np.zeros_like(self.mean)  # No variance
+        return variance

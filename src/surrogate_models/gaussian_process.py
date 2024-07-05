@@ -14,6 +14,8 @@ import numpy as np
 class GaussianProcess:
     def __init__(self, length_scale=1.1, noise=1e-10):
         self.length_scale = length_scale
+        self.K_s = None
+        self.K_ss = None
         self.noise = noise
         self.is_fitted = False
 
@@ -32,14 +34,26 @@ class GaussianProcess:
         self.is_fitted = True
 
     def predict(self, X, out_dims=2):
+        noErrors = True
         if not self.is_fitted:
             print("ERROR: GaussianProcess model is not fitted yet")
+            noErrors = False
         X = np.atleast_2d(X)
-        K_s = self.rbf_kernel(self.X_sample, X)
-        K_ss = self.rbf_kernel(X, X) + self.noise * np.eye(len(X))
+        try:
+            self.K_s = self.rbf_kernel(self.X_sample, X)
+            self.K_ss = self.rbf_kernel(X, X) + self.noise * np.eye(len(X))
 
-        ysample = self.Y_sample.reshape(-1, out_dims)
-        mu_s = K_s.T.dot(self.K_inv).dot(ysample)
-        cov_s = K_ss - K_s.T.dot(self.K_inv).dot(K_s)
-        return mu_s.ravel(), np.diag(cov_s)
+            ysample = self.Y_sample.reshape(-1, out_dims)
+            mu_s = self.K_s.T.dot(self.K_inv).dot(ysample)
+            mu_s = mu_s.ravel()
+        except:
+            mu_s = []
+            noErrors = False
+        return mu_s, noErrors
+    
 
+    def calculate_variance(self):
+        #used for calculating expected improvement, but not applying objective func
+        # use the last predictions so not calculating everything twice
+        cov_s = self.K_ss - self.K_s.T.dot(self.K_inv).dot(self.K_s) 
+        return np.diag(cov_s)

@@ -15,6 +15,7 @@ import numpy as np
 class PolynomialChaosExpansion:
     def __init__(self, degree=2):
         self.degree = degree
+        self.mean = []
         self.coefficients = None
         self.is_fitted = False
 
@@ -47,20 +48,30 @@ class PolynomialChaosExpansion:
         self.is_fitted = True
 
     def predict(self, X, out_vars=None):
+        noErrors = True
         if not self.is_fitted:
             print("ERROR: PolynomialChaosExpansion model is not fitted yet")
+            noErrors = False
 
         X = np.atleast_2d(X)
-        if X.shape[1] != self.X_sample.shape[1]:
-            print("ERROR: Number of features in X does not match the training data in predict")
+        try: 
+            if X.shape[1] != self.X_sample.shape[1]:
+                print("ERROR: Number of features in X does not match the training data in predict")
 
-        H_poly = self._hermite_polynomials(X)
+            H_poly = self._hermite_polynomials(X)
 
-        reshaped_coefficients = self.coefficients.reshape((self.coefficients.shape[0], -1))
+            reshaped_coefficients = self.coefficients.reshape((self.coefficients.shape[0], -1))
 
-        mean = np.dot(H_poly, reshaped_coefficients)
-        mean = mean.reshape((H_poly.shape[0], -1))
+            mean = np.dot(H_poly, reshaped_coefficients)
+            self.mean = mean.reshape((H_poly.shape[0], -1))
+        except:
+            self.mean = []
+            noErrors = False
         
-        variance = np.zeros_like(mean)  # No variance
+        return self.mean, noErrors
 
-        return mean, variance
+    def calculate_variance(self):
+        #used for calculating expected improvement, but not applying objective func
+        # use the last predictions so not calculating everything twice
+        variance = np.zeros_like(self.mean)  # No variance
+        return variance

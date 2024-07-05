@@ -14,6 +14,10 @@ import numpy as np
 class Kriging:
     def __init__(self, length_scale=1.1, noise=1e-10):
         self.length_scale = length_scale
+        self.K_ss = None
+        self.weights = None
+        self.covariances = None
+        self.last_X = None
         self.noise = noise
         self.is_fitted = False
 
@@ -41,29 +45,40 @@ class Kriging:
         self.is_fitted = True
 
     def predict(self, X, out_dims=1):
+        noErrors = True
         if not self.is_fitted:
             print("ERROR: Kriging model is not fitted yet")
+            noErrors = False
         
-        X = np.atleast_2d(X)
+        self.last_X = np.atleast_2d(X)
+       
+        try: 
+            # Calculate distances between sample points and new points X
+            dists_to_sample = np.sqrt(np.sum((self.X_sample[:, None, :] - self.last_X[None, :, :]) ** 2, axis=2))
+            
+            # Use the variogram model to compute covariances
+            self.covariances = self.variogram_model_params[0] * dists_to_sample + self.variogram_model_params[1]
+            
+            # Compute the weights using the inverse of the covariance matrix
+            self.weights = np.dot(self.K_inv, self.covariances)
+            
+            # Compute the predictions
+            predictions = np.dot(self.weights.T, self.Y_sample)
+        except:
+            predictions = []
+            noErrors = False
         
-        # Calculate distances between sample points and new points X
-        dists_to_sample = np.sqrt(np.sum((self.X_sample[:, None, :] - X[None, :, :]) ** 2, axis=2))
-        
-        # Use the variogram model to compute covariances
-        covariances = self.variogram_model_params[0] * dists_to_sample + self.variogram_model_params[1]
-        
-        # Compute the weights using the inverse of the covariance matrix
-        weights = np.dot(self.K_inv, covariances)
-        
-        # Compute the predictions
-        predictions = np.dot(weights.T, self.Y_sample)
+        return predictions, noErrors
+
+    def calculate_variance(self):
+        #used for calculating expected improvement, but not applying objective func
+        # use the last predictions so not calculating everything twice
         
         # Estimate the variance of the prediction
-        K_ss = np.zeros((len(X), len(X)))  # Placeholder for self-covariance matrix of new points
-        for i in range(len(X)):
-            for j in range(len(X)):
-                K_ss[i, j] = self.variogram_model_params[0] * np.linalg.norm(X[i] - X[j]) + self.variogram_model_params[1]
+        self.K_ss = np.zeros((len(self.last_X), len(self.last_X)))  # Placeholder for self-covariance matrix of new points
+        for i in range(len(self.last_X)):
+            for j in range(len(self.last_X)):
+                self.K_ss[i, j] = self.variogram_model_params[0] * np.linalg.norm(self.last_X[i] - self.last_X[j]) + self.variogram_model_params[1]
 
-        cov_prediction = K_ss - np.dot(weights.T, covariances)
-        
-        return predictions, np.diag(cov_prediction).reshape(-1,1)
+        cov_prediction = self.K_ss - np.dot(self.weights.T, self.covariances)
+        return np.diag(cov_prediction).reshape(-1,1)

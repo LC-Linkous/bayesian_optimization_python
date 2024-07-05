@@ -16,6 +16,7 @@ class DecisionTreeRegression:
     def __init__(self, max_depth=None):
         self.max_depth = max_depth
         self.tree = None
+        self.last_predictions = None
         self.is_fitted = False
 
     def fit(self, X, Y):
@@ -67,16 +68,26 @@ class DecisionTreeRegression:
         return mse_left + mse_right
 
     def predict(self, X, out_vars=None):
+        noErrors = True
+        # this is applying the objective function for the surrogate model
         if not self.is_fitted:
             print("ERROR: DecisionTreeRegression model is not fitted yet")
-
+            noErrors = False
         X = np.atleast_2d(X)  # Ensure X is 2D
-        
-        predictions = np.array([self._traverse_tree(x, self.tree) for x in X])
-        variance = np.zeros_like(predictions)  # No variance
+        try:        
+            self.last_predictions = np.array([self._traverse_tree(x, self.tree) for x in X])
+        except:
+            self.last_predictions = []
+            noErrors = False
+        return self.last_predictions, noErrors
+    
+    def calculate_variance(self):
+        #used for calculating expected improvement, but not applying objective func
+        # use the last predictions so not calculating everything twice
+        variance = np.zeros_like(self.last_predictions)  # No variance
+        return variance
 
-        return predictions, variance
-
+    
     def _traverse_tree(self, x, node):
         if isinstance(node, (float, int)):
             return node
