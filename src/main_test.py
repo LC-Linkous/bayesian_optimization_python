@@ -134,9 +134,14 @@ class Test():
 
     def model_predict(self, x):
         # call out to parent class to use surrogate model
-        mu, sigma = self.sm.predict(x, self.out_vars)
-        return mu, sigma
+        #'mean' is regressive definition. not statistical
+        #'variance' only applies for some surrogate models
+        mean, noErrors = self.sm.predict(x, self.out_vars)
+        return mean, noErrors
 
+    def model_get_variance(self):
+        variance = self.sm.calculate_variance()
+        return variance
 
     def run(self):        
 

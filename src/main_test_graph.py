@@ -35,8 +35,8 @@ from surrogate_models.decision_tree_regression import DecisionTreeRegression
 
 # OBJECTIVE FUNCTION
 #import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
-#import himmelblau.configs_F as func_configs         # single objective, 2D input
-import lundquist_3_var.configs_F as func_configs    # multi objective function
+import himmelblau.configs_F as func_configs         # single objective, 2D input
+#import lundquist_3_var.configs_F as func_configs    # multi objective function
 
 
 class TestGraph():
@@ -111,12 +111,12 @@ class TestGraph():
 
 
         #self.sm = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)       
-        #self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
+        self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
         #self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise)  # select the surrogate model
         #self.sm = PolynomialRegression(degree=PR_degree)
         #self.sm = PolynomialChaosExpansion(degree=PC_degree)
         #self.sm = KNNRegression(n_neighbors=KNN_n_neighbors, weights=KNN_weights)
-        self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
+        #self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
 
         self.bayesOptimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
                                                     self.func_F, self.constr_F, 
@@ -171,14 +171,14 @@ class TestGraph():
             print("ERROR: objective function not currently supported for plots")
 
 
-
     def plot_1D(self, X_sample, Y_sample) :
         lbound = np.array(self.lbound[0])
         ubound = np.array(self.ubound[0])
     
         X = np.linspace(lbound, ubound, self.mesh_sample_dim).reshape(-1, 1)
 
-        mu, sigma = self.model_predict(X)
+        mu, noError = self.model_predict(X)
+        sigma = self.model_get_variance()
         ei = self.bayesOptimizer.expected_improvement(X)
 
         # initialize the plot
@@ -330,7 +330,7 @@ class TestGraph():
         mu_arr = []
         ei_arr = []
         for x in X:
-            mu, sigma = self.model_predict(x)
+            mu, noError = self.model_predict(x)
             ei = self.bayesOptimizer.expected_improvement(x)
             mu_arr.append(mu)
             ei_arr.append(ei)
@@ -360,10 +360,12 @@ class TestGraph():
 
     def model_predict(self, x):
         # call out to parent class to use surrogate model
-        mu, sigma = self.sm.predict(x, self.out_vars)
-        return mu, sigma
+        mu, noError = self.sm.predict(x, self.out_vars)
+        return mu, noError
 
-
+    def model_get_variance(self):
+        variance = self.sm.calculate_variance()
+        return variance
 
     def predict_plot_mesh(self):
         # rather than creating X0 and X1, this dynamically creates the linspace for the mesh
@@ -378,7 +380,8 @@ class TestGraph():
 
         # Make into grid
         X = np.array(np.meshgrid(*x_dims)).T.reshape(-1, len(lbound)) #2 = number of dims in
-        mu, sigma = self.model_predict(X)
+        mu, noError = self.model_predict(X)
+        sigma = self.model_get_variance()
         ei = self.bayesOptimizer.expected_improvement(X)
 
         return X, ei, mu, sigma

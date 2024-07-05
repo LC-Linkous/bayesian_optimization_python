@@ -155,8 +155,12 @@ class BayesianOptimization:
 
     def model_predict(self, x) : #, outvar):
         # call out to parent class to use surrogate model
-        mu, sigma = self.parent.model_predict(x)
-        return mu, sigma
+        mu, noError = self.parent.model_predict(x)
+        return mu, noError
+    
+    def model_get_variance(self):
+        sigma = self.parent.model_get_variance()
+        return sigma
 
     # COMPLETION CHECKS
     def converged(self):
@@ -206,7 +210,8 @@ class BayesianOptimization:
     def expected_improvement(self, X):
         X = np.atleast_2d(X)
 
-        mu, sigma = self.model_predict(X) #mean and standard deviation
+        mu, noError = self.model_predict(X) #mean and standard deviation
+        sigma = self.model_get_variance()
         mu_sample, _ = self.model_predict(self.M) #predict using sampled locations
         mu_sample_opt = np.min(mu_sample)
         
