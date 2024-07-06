@@ -35,8 +35,8 @@ from surrogate_models.decision_tree_regression import DecisionTreeRegression
 
 # OBJECTIVE FUNCTION
 #import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
-import himmelblau.configs_F as func_configs         # single objective, 2D input
-#import lundquist_3_var.configs_F as func_configs    # multi objective function
+#import himmelblau.configs_F as func_configs         # single objective, 2D input
+import lundquist_3_var.configs_F as func_configs    # multi objective function
 
 
 class TestGraph():
@@ -79,7 +79,7 @@ class TestGraph():
         K_noise = 1e-10
         K_length_scale = 1.0        
         # Polynomial Regression vars
-        PR_degree = 5
+        PR_degree = 40
         # Polynomial Chaos Expansion vars
         PC_degree = 5 
         # KNN regression vars
@@ -111,9 +111,9 @@ class TestGraph():
 
 
         #self.sm = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)       
-        self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
+        #self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
         #self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise)  # select the surrogate model
-        #self.sm = PolynomialRegression(degree=PR_degree)
+        self.sm = PolynomialRegression(degree=PR_degree)
         #self.sm = PolynomialChaosExpansion(degree=PC_degree)
         #self.sm = KNNRegression(n_neighbors=KNN_n_neighbors, weights=KNN_weights)
         #self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
@@ -340,8 +340,8 @@ class TestGraph():
         Y_mu_plot = np.array(mu_arr).reshape(-1, 2)
 
         # SURROGATE MODEL PLOT
-        self.ax2.scatter(Y_mu_plot[:,0], Y_mu_plot[:,1], c='b', label='Surrogate Output')
-        self.ax2.scatter(Y_sample[:, 0], Y_sample[:, 1], c='r', s=50, label='Samples')
+        self.ax2.scatter(Y_mu_plot[:,0], Y_mu_plot[:,1], c='b', label='Surrogate Output Fitness')
+        self.ax2.scatter(Y_sample[:, 0], Y_sample[:, 1], c='r', s=50, label='Sample Fitness')
         self.ax2.set_title('Surrogate Model (GP Mean), \n Fitted to Samples')  
         self.ax2.legend()
         
