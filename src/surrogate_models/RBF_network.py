@@ -39,6 +39,9 @@ class RBFNetwork:
         return Phi
 
     def fit(self, X, y):
+        if len(X) < 1:
+            print("ERROR: at least one initial point needed for this kernel")
+            return
         y = y.reshape(y.shape[0], -1)
 
         self.centers = X

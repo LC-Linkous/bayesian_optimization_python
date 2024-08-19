@@ -9,7 +9,7 @@
 #   Format updates are for integration in the AntennaCAT GUI.
 #
 #   Author(s): Lauren Linkous, Jonathan Lundquist
-#   Last update: June 24, 2024
+#   Last update: August 18, 2024
 ##--------------------------------------------------------------------\
 
 
@@ -29,8 +29,8 @@ from surrogate_models.KNN_regression import KNNRegression
 from surrogate_models.decision_tree_regression import DecisionTreeRegression
 
 # OBJECTIVE FUNCTION
-#import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
-import himmelblau.configs_F as func_configs         # single objective, 2D input
+import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
+#import himmelblau.configs_F as func_configs         # single objective, 2D input
 #import lundquist_3_var.configs_F as func_configs    # multi objective function
 
 class Test():
@@ -96,9 +96,9 @@ class Test():
 
         self.allow_update = True        # Allow objective call to update state 
 
-        #self.sm = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)       
+        self.sm = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)       
         #self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
-        self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise)  # select the surrogate model
+        #self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise)  # select the surrogate model
         #self.sm = PolynomialRegression(degree=PR_degree)
         #self.sm = PolynomialChaosExpansion(degree=PC_degree)
         #self.sm = KNNRegression(n_neighbors=KNN_n_neighbors, weights=KNN_weights)
@@ -106,7 +106,7 @@ class Test():
 
         self.bayesOptimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
                                                     self.func_F, self.constr_F, 
-                                                    init_points=init_num_points, 
+                                                    init_points=2, 
                                                     xi = xi, n_restarts=n_restarts, 
                                                     parent=parent, detailedWarnings=detailedWarnings)
 
@@ -119,12 +119,6 @@ class Test():
         msg = "[" + str(curTime) +"] " + str(txt)
         print(msg)
 
-
-    def record_params(self):
-        # this function is called from particle_swarm.py to trigger a write to a log file
-        # running in the AntennaCAT GUI to record the parameter iteration that caused an error
-        pass
-         
 
     # SURROGATE MODEL FUNCS
     def fit_model(self, x, y):

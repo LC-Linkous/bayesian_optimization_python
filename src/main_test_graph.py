@@ -11,7 +11,7 @@
 #       matplotlib plot of objective function and surrogate model
 #
 #   Author(s): Lauren Linkous, Jonathan Lundquist
-#   Last update: June 24, 2024
+#   Last update: August 18, 2024
 ##--------------------------------------------------------------------\
 
 
@@ -90,7 +90,7 @@ class TestGraph():
 
 
         #plotting vars - make sure plots and samples match
-        self.mesh_sample_dim = 10
+        self.mesh_sample_dim = 25
         self.lbound = LB
         self.ubound = UB
         # Swarm vars
@@ -112,8 +112,8 @@ class TestGraph():
 
         #self.sm = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)       
         #self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
-        #self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise)  # select the surrogate model
-        self.sm = PolynomialRegression(degree=PR_degree)
+        self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise)  # select the surrogate model
+        #self.sm = PolynomialRegression(degree=PR_degree)
         #self.sm = PolynomialChaosExpansion(degree=PC_degree)
         #self.sm = KNNRegression(n_neighbors=KNN_n_neighbors, weights=KNN_weights)
         #self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
@@ -127,7 +127,7 @@ class TestGraph():
 
         # Matplotlib setup
         # # Initialize plot
-        self.fig = plt.figure(figsize=(10, 4))
+        self.fig = plt.figure(figsize=(10, 7))
 
         self.figNum = self.fig.number
         self.first_run = True
@@ -208,7 +208,7 @@ class TestGraph():
         self.ax1.plot(X_sample, Y_sample, 'r.', markersize=10, label='Samples')
         self.ax1.plot(X, mu, 'b-', label='GP Mean')
         self.ax1.fill_between(X.ravel(), (mu - 1.96 * sigma).ravel(), (mu + 1.96 * sigma).ravel(), alpha=0.2, color='b')
-        self.ax1.set_title('Gaussian Process Regression')
+        self.ax1.set_title('Objective Function and Surrogate Model, Samples: ' + str(self.ctr))
         self.ax1.legend()
         
         # EXPECTED IMPROVEMENT
@@ -223,6 +223,26 @@ class TestGraph():
         if self.ctr == 0:
             time.sleep(5)
         self.ctr = self.ctr + 1
+
+        # print statements for README update
+        # if self.ctr == 1:
+        #     plt.savefig("1d_bayes_save_1.png")
+        # elif self.ctr == 2:
+        #     plt.savefig("1d_bayes_save_2.png")           
+        # elif self.ctr == 3:
+        #     plt.savefig("1d_bayes_save_3.png")        
+        # elif self.ctr == 4:
+        #     plt.savefig("1d_bayes_save_4.png")      
+        # elif self.ctr == 5:
+        #     plt.savefig("1d_bayes_save_5.png")      
+        # elif self.ctr == 10:
+        #     plt.savefig("1d_bayes_save_10.png")      
+        # elif self.ctr == 15:
+        #     plt.savefig("1d_bayes_save_15.png")      
+        # elif self.ctr == 20:
+        #     plt.savefig("1d_bayes_save_20.png")      
+
+
 
 
     def plot_2D_single(self, X_sample, Y_sample):
@@ -289,7 +309,43 @@ class TestGraph():
         if self.ctr == 0:
             time.sleep(3)
         self.ctr = self.ctr + 1
-        
+
+        if self.ctr == 1:
+            plt.savefig("2d_bayes_save_1.png")
+        elif self.ctr == 2:
+            plt.savefig("2d_bayes_save_2.png")           
+        elif self.ctr == 3:
+            plt.savefig("2d_bayes_save_3.png")        
+        elif self.ctr == 4:
+            plt.savefig("2d_bayes_save_4.png")      
+        elif self.ctr == 5:
+            plt.savefig("2d_bayes_save_5.png")      
+        elif self.ctr == 10:
+            plt.savefig("2d_bayes_save_10.png")      
+        elif self.ctr == 15:
+            plt.savefig("2d_bayes_save_15.png")      
+        elif self.ctr == 20:
+            plt.savefig("2d_bayes_save_20.png")      
+        elif self.ctr == 30:
+            plt.savefig("2d_bayes_save_30.png")      
+        elif self.ctr == 40:
+            plt.savefig("2d_bayes_save_40.png")      
+        elif self.ctr == 50:
+            plt.savefig("2d_bayes_save_50.png")        
+        elif self.ctr == 60:
+            plt.savefig("2d_bayes_save_60.png")      
+        elif self.ctr == 70:
+            plt.savefig("2d_bayes_save_70.png")      
+        elif self.ctr == 100:
+            plt.savefig("2d_bayes_save_100.png")      
+        elif self.ctr == 120:
+            plt.savefig("2d_bayes_save_120.png")    
+        elif self.ctr == 150:
+            plt.savefig("2d_bayes_save_150.png")      
+        elif self.ctr == 200:
+            plt.savefig("2d_bayes_save_200.png")      
+
+
 
     def plot_2D_multi(self, X_sample, Y_sample):
         #create mesh and predict
@@ -323,7 +379,7 @@ class TestGraph():
         Y1 = Y[:,1].reshape(-1, 1)
         self.ax1.scatter(Y0, Y1, c='b', label='Objective Func Output')
         self.ax1.set_title("Objective Function Output Sampling \n & " + str(len(Y_sample)) + " Samples")
-        self.ax1.scatter(Y_sample[:, 0], Y_sample[:, 1], c='r', s=50, label='Samples')
+        self.ax1.scatter(Y_sample[:, 0], Y_sample[:, 1], c='r', marker="X", s=50, label='Samples')
         self.ax1.legend()
         
         # the 3 dimensional arrays are too much to put in at once, so do it in pieces.
@@ -341,8 +397,8 @@ class TestGraph():
 
         # SURROGATE MODEL PLOT
         self.ax2.scatter(Y_mu_plot[:,0], Y_mu_plot[:,1], c='b', label='Surrogate Output Fitness')
-        self.ax2.scatter(Y_sample[:, 0], Y_sample[:, 1], c='r', s=50, label='Sample Fitness')
-        self.ax2.set_title('Surrogate Model (GP Mean), \n Fitted to Samples')  
+        self.ax2.scatter(Y_sample[:, 0], Y_sample[:, 1], c='r', marker="X", s=50, label='Sample Fitness')
+        self.ax2.set_title('Surrogate Model, \n Fitted to Samples')  
         self.ax2.legend()
         
         plt.draw()
@@ -350,6 +406,43 @@ class TestGraph():
         if self.ctr == 0:
             time.sleep(3)
         self.ctr = self.ctr + 1
+
+        if self.ctr == 1:
+            plt.savefig("2d_mult_bayes_save_1.png")
+        elif self.ctr == 2:
+            plt.savefig("2d_mult_bayes_save_2.png")           
+        elif self.ctr == 3:
+            plt.savefig("2d_mult_bayes_save_3.png")        
+        elif self.ctr == 4:
+            plt.savefig("2d_mult_bayes_save_4.png")      
+        elif self.ctr == 5:
+            plt.savefig("2d_mult_bayes_save_5.png")      
+        elif self.ctr == 10:
+            plt.savefig("2d_mult_bayes_save_10.png")      
+        elif self.ctr == 15:
+            plt.savefig("2d_mult_bayes_save_15.png")      
+        elif self.ctr == 20:
+            plt.savefig("2d_mult_bayes_save_20.png")      
+        elif self.ctr == 30:
+            plt.savefig("2d_mult_bayes_save_30.png")      
+        elif self.ctr == 40:
+            plt.savefig("2d_mult_bayes_save_40.png")      
+        elif self.ctr == 50:
+            plt.savefig("2d_mult_bayes_save_50.png")        
+        elif self.ctr == 60:
+            plt.savefig("2d_mult_bayes_save_60.png")      
+        elif self.ctr == 70:
+            plt.savefig("2d_mult_bayes_save_70.png")      
+        elif self.ctr == 100:
+            plt.savefig("2d_mult_bayes_save_100.png")      
+        elif self.ctr == 120:
+            plt.savefig("2d_mult_bayes_save_120.png")    
+        elif self.ctr == 150:
+            plt.savefig("2d_mult_bayes_save_150.png")      
+        elif self.ctr == 200:
+            plt.savefig("2d_mult_bayes_save_200.png")      
+
+
  
   
     # SURROGATE MODEL FUNCS
