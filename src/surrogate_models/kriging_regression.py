@@ -6,7 +6,7 @@
 #   Kriging (Gaussian process regression) surrogate model for optimization. 
 #
 #   Author(s): Lauren Linkous 
-#   Last update: June 25, 2024
+#   Last update: December 2, 2024
 ##--------------------------------------------------------------------\
 
 import numpy as np
@@ -22,6 +22,24 @@ class Kriging:
         self.is_fitted = False
         self.variogram_model_params = []
 
+    # configuration check for surrogate models
+    # important for AntennCAT surrogate model use. can skip otherwise
+    def _check_configuration(self, init_pts):
+        noError, errMsg = self._check_initial_points(init_pts)
+        return noError, errMsg
+        
+
+    def _check_initial_points(self, init_pts):
+        MIN_INIT_POINTS = 2
+        errMsg = ""
+        noError = True        
+        if init_pts < MIN_INIT_POINTS:
+            errMsg = "ERROR: minimum required initial points is" + str(MIN_INIT_POINTS)
+            noError = False
+        return noError, errMsg
+
+
+    # SM functions
     def empirical_variogram(self, X, Y):
         # Calculate empirical variogram from data X and Y
         dists = np.sqrt(np.sum((X[:, None, :] - X[None, :, :]) ** 2, axis=2))  # Euclidean distance

@@ -9,7 +9,7 @@
 #   Format updates are for integration in the AntennaCAT GUI.
 #
 #   Author(s): Lauren Linkous, Jonathan Lundquist
-#   Last update: August 18, 2024
+#   Last update: December 2, 2024
 ##--------------------------------------------------------------------\
 
 
@@ -56,30 +56,78 @@ class Test():
         self.in_vars = IN_VARS
         self.out_vars = OUT_VARS
 
+
+        
+        #default params
         # Bayesian optimizer tuning params
-        init_num_points = 2 
         xi = 0.01
         n_restarts = 25
 
+        # using a variable for options for better debug messages
+        SM_OPTION = 6           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+                                # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
+                                # 5 = KNN regression, 6 = Decision Tree Regression
+
         # SURROGATE MODEL VARS
-        # RBF Network vars
-        RBF_kernel  = 'gaussian' #options: 'gaussian', 'multiquadric'
-        RBF_epsilon = 1.0
-        # Gaussian Process vars
-        GP_noise = 1e-10
-        GP_length_scale = 1.0
-        # Kriging vars
-        K_noise = 1e-10
-        K_length_scale = 1.0        
-        # Polynomial Regression vars
-        PR_degree = 5
-        # Polynomial Chaos Expansion vars
-        PC_degree = 5 
-        # KNN regression vars
-        KNN_n_neighbors=3
-        KNN_weights='uniform'  #options: 'uniform', 'distance'
-        # Decision Tree Regression vars
-        DTR_max_depth = 5  # options: ints
+        if SM_OPTION == 0:
+            # RBF Network vars
+            RBF_kernel  = 'gaussian' #options: 'gaussian', 'multiquadric'
+            RBF_epsilon = 1.0
+            num_init_points = 1
+            self.sm = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)  
+            noError, errMsg = self.sm._check_configuration(num_init_points, RBF_kernel)
+
+        elif SM_OPTION == 1:
+            # Gaussian Process vars
+            GP_noise = 1e-10
+            GP_length_scale = 1.0
+            num_init_points = 1
+            self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise) 
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
+        elif SM_OPTION == 2:
+            # Kriging vars
+            K_noise = 1e-10
+            K_length_scale = 1.0   
+            num_init_points = 2 
+            self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
+        elif SM_OPTION == 3:
+            # Polynomial Regression vars
+            PR_degree = 5
+            num_init_points = 1
+            self.sm = PolynomialRegression(degree=PR_degree)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
+        elif SM_OPTION == 4:
+            # Polynomial Chaos Expansion vars
+            PC_degree = 5 
+            num_init_points = 1
+            self.sm = PolynomialChaosExpansion(degree=PC_degree)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
+        elif SM_OPTION == 5:
+            # KNN regression vars
+            KNN_n_neighbors=3
+            KNN_weights='uniform'  #options: 'uniform', 'distance'
+            num_init_points = 1
+            self.sm = KNNRegression(n_neighbors=KNN_n_neighbors, weights=KNN_weights)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
+        elif SM_OPTION == 6:
+            # Decision Tree Regression vars
+            DTR_max_depth = 5  # options: ints
+            num_init_points = 1
+            self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
+
+    
+        if noError == False:
+            print("ERROR in main_test.py. Incorrect surrogate model configuration")
+            print(errMsg)
+            return
 
         self.best_eval = 9999    # set higher than normal because of the potential for missing the target
 
@@ -96,17 +144,11 @@ class Test():
 
         self.allow_update = True        # Allow objective call to update state 
 
-        self.sm = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)       
-        #self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
-        #self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise)  # select the surrogate model
-        #self.sm = PolynomialRegression(degree=PR_degree)
-        #self.sm = PolynomialChaosExpansion(degree=PC_degree)
-        #self.sm = KNNRegression(n_neighbors=KNN_n_neighbors, weights=KNN_weights)
-        #self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
+
 
         self.bayesOptimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
                                                     self.func_F, self.constr_F, 
-                                                    init_points=2, 
+                                                    init_points=num_init_points, 
                                                     xi = xi, n_restarts=n_restarts, 
                                                     parent=parent, detailedWarnings=detailedWarnings)
 
