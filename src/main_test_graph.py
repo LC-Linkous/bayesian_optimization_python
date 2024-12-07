@@ -34,8 +34,8 @@ from surrogate_models.KNN_regression import KNNRegression
 from surrogate_models.decision_tree_regression import DecisionTreeRegression
 
 # OBJECTIVE FUNCTION
-import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
-#import himmelblau.configs_F as func_configs         # single objective, 2D input
+#import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
+import himmelblau.configs_F as func_configs         # single objective, 2D input
 #import lundquist_3_var.configs_F as func_configs    # multi objective function
 
 
@@ -62,13 +62,15 @@ class TestGraph():
         self.in_vars = IN_VARS
         self.out_vars = OUT_VARS
 
+
+        
         #default params
         # Bayesian optimizer tuning params
         xi = 0.01
         n_restarts = 25
 
         # using a variable for options for better debug messages
-        SM_OPTION = 6           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+        SM_OPTION = 0           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
                                 # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
                                 # 5 = KNN regression, 6 = Decision Tree Regression
 
@@ -85,7 +87,7 @@ class TestGraph():
             # Gaussian Process vars
             GP_noise = 1e-10
             GP_length_scale = 1.0
-            num_init_points = 1
+            num_init_points = 3
             self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise) 
             noError, errMsg = self.sm._check_configuration(num_init_points)
 
@@ -126,6 +128,7 @@ class TestGraph():
             self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
             noError, errMsg = self.sm._check_configuration(num_init_points)
 
+
     
         if noError == False:
             print("ERROR in main_test.py. Incorrect surrogate model configuration")
@@ -133,10 +136,13 @@ class TestGraph():
             return
 
 
+        self.num_init_points = num_init_points # this helps decide when to draw the plots after the initial pts
+
         #plotting vars - make sure plots and samples match
         self.mesh_sample_dim = 25
         self.lbound = LB
         self.ubound = UB
+
         # Swarm vars
         self.best_eval = 9999           # set higher than normal because of the potential for missing the target
 
@@ -160,11 +166,10 @@ class TestGraph():
                                                     init_points=num_init_points, 
                                                     xi = xi, n_restarts=n_restarts, 
                                                     parent=parent, detailedWarnings=detailedWarnings)
-        
 
         # Matplotlib setup
         # # Initialize plot
-        self.fig = plt.figure(figsize=(10, 7))
+        self.fig = plt.figure(figsize=(11, 7))
 
         self.figNum = self.fig.number
         self.first_run = True
@@ -186,19 +191,23 @@ class TestGraph():
          
 
     def update_plot(self, X_sample, Y_sample):
+
         #check if plot exists or has been closed out.
         # return if closed so the program keeps running
         if plt.fignum_exists(self.figNum) == False:
             return
         
         if self.in_vars == 1:
+            print("1 VAR")
             self.plot_1D(X_sample, Y_sample)
         elif self.in_vars == 2:
+            print("2VARS")
             if self.out_vars == 1: #single objective
                 self.plot_2D_single(X_sample, Y_sample)
             else:
                 print("ERROR: objective function not currently supported for plots")
         elif self.in_vars == 3:
+            print("3VARS")
             if self.out_vars == 2:
                 self.plot_2D_multi(X_sample, Y_sample)
             else:
@@ -237,7 +246,7 @@ class TestGraph():
         for i in range(0, len(X)):
             newFVals, noError = self.func_F(X[i])
             if noError == False:
-                print("ERROR in objc func call update for loop")
+                print("ERROR in objc func call update for() loop")
             plot_FVals.append(newFVals)
         Y_plot = np.array(plot_FVals).reshape(-1, 1)      
 
@@ -305,21 +314,22 @@ class TestGraph():
         self.ax2.clear()
         self.ax3.clear()
       
+        
         # # OBJECTIVE FUNCTION AND SAMPLE PLOT
         # The title gets updated every time to track the iterations
         self.ax1.set_title("Objective Function & " + str(len(Y_sample)) + " Samples")
-        self.ax1.scatter(X_sample[:, 0], X_sample[:, 1], Y_sample, c='r', s=50)
+        self.ax1.scatter(X_sample[:, 0], X_sample[:, 1], Y_sample[:,0], c='r', s=50)
  
-        # ACQUISITION FUNCTION PLOTS
+        # ACQUISITION FUNCTION 
+        self.ax2.set_aspect('equal', adjustable='box')
         self.ax2.contourf(X0, X1, ei, cmap='viridis')
         self.ax2.scatter(X_sample[:, 0], X_sample[:, 1], c='r', s=50)
         self.ax2.set_title('Acquisition Function (Expected Improvement)')
 
         # SURROGATE MODEL PLOT
         self.ax3.plot_surface(X0, X1, Y_mu_plot, cmap='viridis', alpha=0.7)
-        self.ax3.scatter(X_sample[:, 0], X_sample[:, 1], Y_sample, c='r', s=50)
+        self.ax3.scatter(X_sample[:, 0], X_sample[:, 1], Y_sample[:,0], c='r', s=50)
         self.ax3.set_title('Surrogate Model, \n Fitted to Samples')  
-
 
         plt.draw()
         plt.pause(0.0001)  # Pause to update the plot
@@ -447,8 +457,9 @@ class TestGraph():
                     print("Best Eval")
                     print(self.best_eval)
 
-            X_sample, Y_sample = self.bayesOptimizer.get_sample_points()
-            self.update_plot(X_sample, Y_sample) #update matplot
+            if iter > (self.num_init_points+1):
+                X_sample, Y_sample = self.bayesOptimizer.get_sample_points()
+                self.update_plot(X_sample, Y_sample) #update matplot
 
         print("Optimized Solution")
         print(self.bayesOptimizer.get_optimized_soln())

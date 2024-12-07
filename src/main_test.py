@@ -29,8 +29,8 @@ from surrogate_models.KNN_regression import KNNRegression
 from surrogate_models.decision_tree_regression import DecisionTreeRegression
 
 # OBJECTIVE FUNCTION
-import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
-#import himmelblau.configs_F as func_configs         # single objective, 2D input
+#import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
+import himmelblau.configs_F as func_configs         # single objective, 2D input
 #import lundquist_3_var.configs_F as func_configs    # multi objective function
 
 class Test():
@@ -64,7 +64,7 @@ class Test():
         n_restarts = 25
 
         # using a variable for options for better debug messages
-        SM_OPTION = 6           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+        SM_OPTION = 1           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
                                 # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
                                 # 5 = KNN regression, 6 = Decision Tree Regression
 
@@ -81,7 +81,7 @@ class Test():
             # Gaussian Process vars
             GP_noise = 1e-10
             GP_length_scale = 1.0
-            num_init_points = 1
+            num_init_points = 3
             self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise) 
             noError, errMsg = self.sm._check_configuration(num_init_points)
 
@@ -180,6 +180,12 @@ class Test():
         return variance
 
     def run(self):        
+
+        '''
+        this might be stepping twice before allowing updates
+
+        '''
+
 
         # instantiation of particle swarm optimizer 
         while not self.bayesOptimizer.complete():
