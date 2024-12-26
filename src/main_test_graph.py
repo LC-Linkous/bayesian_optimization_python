@@ -18,8 +18,6 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-import numpy as np
-import time
 
 # OPTIMIZER
 from bayesian_optimizer import BayesianOptimization
@@ -198,16 +196,13 @@ class TestGraph():
             return
         
         if self.in_vars == 1:
-            print("1 VAR")
             self.plot_1D(X_sample, Y_sample)
         elif self.in_vars == 2:
-            print("2VARS")
             if self.out_vars == 1: #single objective
                 self.plot_2D_single(X_sample, Y_sample)
             else:
                 print("ERROR: objective function not currently supported for plots")
         elif self.in_vars == 3:
-            print("3VARS")
             if self.out_vars == 2:
                 self.plot_2D_multi(X_sample, Y_sample)
             else:
@@ -215,6 +210,9 @@ class TestGraph():
 
         else:
             print("ERROR: objective function not currently supported for plots")
+
+        
+        
 
 
     def plot_1D(self, X_sample, Y_sample) :

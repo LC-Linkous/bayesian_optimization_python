@@ -16,7 +16,7 @@
 import numpy as np
 from numpy.random import Generator, MT19937
 import sys
-import time
+
 
 class BayesianOptimization:
     def __init__(self,lbound, ubound, 
@@ -258,12 +258,13 @@ class BayesianOptimization:
         else:        
             self.allow_update = 1
         
-        # case 0: first point of intiail points (must have minimum 1)
+        # case 0: first point of initial points (must have minimum 1)
         if self.objective_function_case == 0:
             new_M = self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], (1, len(self.ubound))).reshape(1,len(self.ubound))
             newFVals, noError = self.obj_func(new_M[0], self.output_size)  # Cumulative Fvals
+
             if noError == True:
-                newFVals = np.array(newFVals).reshape(-1, 1)  # kept for comparison between other optimzers
+                newFVals = np.array([newFVals])#.reshape(-1, 1)  # kept for comparison between other optimzers
                 self.M = new_M
                 self.F_Pb = newFVals
             else:
@@ -277,10 +278,10 @@ class BayesianOptimization:
             new_M = self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], (1, len(self.ubound))).reshape(1,len(self.ubound))
             newFVals, noError = self.obj_func(new_M[0], self.output_size) 
             if noError == True:
-                newFVals = np.array(newFVals).reshape(-1, 1) 
+                newFVals = np.array([newFVals])#.reshape(-1, 1) 
                 self.M = np.vstack([self.M, new_M])
-                self.F_Pb = np.append(self.F_Pb, newFVals).reshape(-1, 1) 
-            
+                self.F_Pb = np.vstack((self.F_Pb, newFVals))#.reshape(-1, 1) 
+
             else:
                 msg = "ERROR: objective function error when initilaizing random points"
                 self.error_message_generator(msg)
@@ -296,15 +297,10 @@ class BayesianOptimization:
 
             newFVals, noError = self.obj_func(self.new_point[0], self.output_size)
             if noError==True:
-                self.Fvals = np.array(newFVals).reshape(-1, 1) 
+                self.Fvals = np.array([newFVals])#.reshape(-1, 1) 
                 self.Flist = abs(self.targets - self.Fvals)
                 self.M = np.vstack((self.M, self.new_point))
-                print("SELF.FVALS")
-                print(self.Fvals)
-                print("self.F_Pb")
-                print(self.F_Pb)
-
-                self.F_Pb = np.append(self.F_Pb, newFVals).reshape(-1, 1) 
+                self.F_Pb = np.vstack((self.F_Pb, newFVals))#.reshape(-1, 1) 
                 self.fit_model(self.M, self.F_Pb)
 
         else:
@@ -338,24 +334,21 @@ class BayesianOptimization:
                 #2) getter for sample points (to ensure standard formatting)
                 #3) fit the surrogate model
 
-                print("INIT COUNTER: " + str (self.ctr))
                 # running the initial point collection 
                 if self.ctr < self.init_points:
                     
                     # these are split into 2 cases for easier debug
                     if self.ctr == 0: # first point
-                        print("FIRST POINT")
                         #calling the objective function with the first random pt 
                         self.objective_function_case = 0
                         
                     else: # rest of the points
-                        print("OTHER POINT")
                         self.objective_function_case = 1
                     self.ctr = self.ctr + 1
                 
                 else: #if self.ctr >= self.init_points: 
-                    msg = "Model initialized with " + str(self.ctr) + " points. \
-                    The interation counter will start from " + str(self.iter)
+                    msg = "Model initialized with " + str(self.ctr) + " points. \n \
+                    The iteration counter will start from " + str(self.iter) + "\n\n"
                     self.error_message_generator(msg)
                     # get the sample points out (to ensure standard formatting)
                     x_sample, y_sample = self.get_sample_points()
