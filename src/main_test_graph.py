@@ -30,6 +30,7 @@ from surrogate_models.polynomial_regression import PolynomialRegression
 from surrogate_models.polynomial_chaos_expansion import PolynomialChaosExpansion
 from surrogate_models.KNN_regression import KNNRegression
 from surrogate_models.decision_tree_regression import DecisionTreeRegression
+from surrogate_models.matern_process import MaternProcess
 
 # OBJECTIVE FUNCTION
 #import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
@@ -68,9 +69,10 @@ class TestGraph():
         n_restarts = 25
 
         # using a variable for options for better debug messages
-        SM_OPTION = 0           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+        SM_OPTION = 7           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
                                 # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
                                 # 5 = KNN regression, 6 = Decision Tree Regression
+                                # 7 = Matern, 8 = 
 
         # SURROGATE MODEL VARS
         if SM_OPTION == 0:
@@ -125,6 +127,17 @@ class TestGraph():
             num_init_points = 1
             self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
             noError, errMsg = self.sm._check_configuration(num_init_points)
+
+        elif SM_OPTION == 7:
+            # Matern Process vars
+            DTR_max_depth = 1  # options: ints
+            num_init_points = 1
+            MP_length_scale = 1.1
+            MP_noise = 1e-10
+            MP_nu = 3/2
+            self.sm = MaternProcess(length_scale=MP_length_scale, noise=MP_noise, nu=MP_nu)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
 
 
     
