@@ -11,7 +11,7 @@
 #       matplotlib plot of objective function and surrogate model
 #
 #   Author(s): Lauren Linkous, Jonathan Lundquist
-#   Last update: August 18, 2024
+#   Last update: March 12, 2025
 ##--------------------------------------------------------------------\
 
 
@@ -31,6 +31,8 @@ from surrogate_models.polynomial_chaos_expansion import PolynomialChaosExpansion
 from surrogate_models.KNN_regression import KNNRegression
 from surrogate_models.decision_tree_regression import DecisionTreeRegression
 from surrogate_models.matern_process import MaternProcess
+from surrogate_models.lagrangian_linear_regression import LagrangianLinearRegression
+from surrogate_models.lagrangian_polynomial_regression import LagrangianPolynomialRegression
 
 # OBJECTIVE FUNCTION
 #import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
@@ -69,10 +71,12 @@ class TestGraph():
         n_restarts = 25
 
         # using a variable for options for better debug messages
-        SM_OPTION = 7           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+        SM_OPTION = 8           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
                                 # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
                                 # 5 = KNN regression, 6 = Decision Tree Regression
-                                # 7 = Matern, 8 = 
+                                # 7 = Matern, 8 = Lagrangian Linear Regression
+                                # 9 = Lagrangian Polynomial Regression
+                                # 10 = 
 
         # SURROGATE MODEL VARS
         if SM_OPTION == 0:
@@ -138,9 +142,30 @@ class TestGraph():
             self.sm = MaternProcess(length_scale=MP_length_scale, noise=MP_noise, nu=MP_nu)
             noError, errMsg = self.sm._check_configuration(num_init_points)
 
+        elif SM_OPTION == 8:
+            # Lagrangian penalty linear regression vars
+            num_init_points = 2
+            LLReg_noise = 1e-10
+            LLReg_constraint_degree=1
+            self.sm = LagrangianLinearRegression(noise=LLReg_noise, constraint_degree=LLReg_constraint_degree)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
+        elif SM_OPTION == 9:
+            # Lagrangian penalty polynomial regression vars
+            num_init_points = 2
+            LPReg_degree = 5
+            LPReg_noise = 1e-10
+            LPReg_constraint_degree = 3
+            self.sm = LagrangianPolynomialRegression(degree=LPReg_degree, noise=LPReg_noise, constraint_degree=LPReg_constraint_degree)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
+            # LWP_degree = 2
+            # LWP_num_constraints = 2
+            # self.sm = LagrangianWithPolynomialSurrogate(degree=LWP_degree)
+            # noError, errMsg = self.sm._check_configuration(num_init_points)
 
 
-    
+   
         if noError == False:
             print("ERROR in main_test.py. Incorrect surrogate model configuration")
             print(errMsg)
