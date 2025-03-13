@@ -16,6 +16,7 @@
 
 
 import numpy as np
+import pandas as pd
 import time
 import matplotlib.pyplot as plt
 
@@ -58,8 +59,8 @@ class TestGraph():
         self.constr_F = func_configs.CONSTR_FUNC   # constraint function
 
         # OPTIMIZER VARIABLES        
-        E_TOL = 10 ** -6                  # Convergence Tolerance. For Sweep, this should be a larger value
-        MAXIT = 1000                      # Maximum allowed iterations
+        TOL = 10 ** -6                  # Convergence Tolerance. For Sweep, this should be a larger value
+        MAXIT = 1000                    # Maximum allowed iterations
 
         # for handling multiple types of graphs
         self.in_vars = IN_VARS
@@ -190,12 +191,17 @@ class TestGraph():
         self.allow_update = True        # Allow objective call to update state 
 
 
+        # Constant variables
+        opt_params = {'XI': [xi],                   # exploration float
+                    'NUM_RESTARTS': [n_restarts],   # number of predition restarts
+                    'INIT_PTS': [num_init_points]}  # initial number of samples
 
-        self.bayesOptimizer = BayesianOptimization(LB, UB, OUT_VARS, TARGETS, E_TOL, MAXIT,
-                                                    self.func_F, self.constr_F, 
-                                                    init_points=num_init_points, 
-                                                    xi = xi, n_restarts=n_restarts, 
-                                                    parent=parent)
+
+        opt_df = pd.DataFrame(opt_params)
+        self.bayesOptimizer = BayesianOptimization(LB, UB, TARGETS, TOL, MAXIT,
+                                self.func_F, self.constr_F, 
+                                opt_df,
+                                parent=parent)  
 
         # Matplotlib setup
         # # Initialize plot

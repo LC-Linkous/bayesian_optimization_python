@@ -19,15 +19,32 @@ import sys
 
 
 class BayesianOptimization:
-    def __init__(self,lbound, ubound, 
-                output_size, targets, E_TOL, maxit,
-                obj_func, constr_func,
-                init_points=2, 
-                xi = 0.01, n_restarts=25,
-                parent=None):
+    # arguments should take form: 
+    # optimizer([[float, float, ...]], [[float, float, ...]], [[float, ...]], float, int,
+    # func, func,
+    # dataFrame,
+    # class obj) 
+    #  
+    # opt_df contains class-specific tuning parameters
+    # NO_OF_PARTICLES: int
+    # weights: [[float, float, float]]
+    # boundary: int. 1 = random, 2 = reflecting, 3 = absorbing,   4 = invisible
+    # vlimit: float
+    # 
+   
+    def __init__(self, lbound, ubound, targets,E_TOL, maxit,
+                 obj_func, constr_func, 
+                 opt_df,
+                 parent=None):
         
         # Optional parent class func call to write out values that trigger constraint issues
         self.parent = parent 
+
+        #unpack the opt_df standardized vals
+        init_points = int(opt_df['INIT_PTS'][0])
+        n_restarts = int(opt_df['NUM_RESTARTS'][0])
+        xi = float(opt_df['XI'][0])
+
 
         # problem height and width
         heightl = np.shape(lbound)[0]
@@ -67,7 +84,7 @@ class BayesianOptimization:
 
 
             '''
-            self.M                      : An array of current X sample locations. All M values are also personal bests (self.Pb)
+            self.M                      : An array of current X sample locations. 
             self.output_size            : An integer value for the output size of obj func
             self.Gb                     : Global best position, initialized with a large value.
             self.F_Gb                   : Fitness value corresponding to the global best position.
@@ -88,9 +105,9 @@ class BayesianOptimization:
             '''
 
             self.M = []
-            self.output_size = output_size
+            self.output_size = len(targets)
             self.Gb = sys.maxsize*np.ones((1,np.max([heightl, widthl])))   
-            self.F_Gb = sys.maxsize*np.ones((1,output_size))
+            self.F_Gb = sys.maxsize*np.ones((1,self.output_size))
             self.F_Pb = []  
             self.targets = np.array(targets).reshape(-1, 1)         
             self.maxit = maxit                       
@@ -106,6 +123,7 @@ class BayesianOptimization:
             self.n_restarts = n_restarts
             self.new_point = []
     
+
             # state machine control flow
             self.firstOptimizationRun = False
             self.doneInitializationBoolean = False
