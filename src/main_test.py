@@ -9,7 +9,7 @@
 #   Format updates are for integration in the AntennaCAT GUI.
 #
 #   Author(s): Lauren Linkous, Jonathan Lundquist
-#   Last update: December 2, 2024
+#   Last update: March 12, 2025
 ##--------------------------------------------------------------------\
 
 
@@ -26,6 +26,9 @@ from surrogate_models.polynomial_regression import PolynomialRegression
 from surrogate_models.polynomial_chaos_expansion import PolynomialChaosExpansion
 from surrogate_models.KNN_regression import KNNRegression
 from surrogate_models.decision_tree_regression import DecisionTreeRegression
+from surrogate_models.matern_process import MaternProcess
+from surrogate_models.lagrangian_linear_regression import LagrangianLinearRegression
+from surrogate_models.lagrangian_polynomial_regression import LagrangianPolynomialRegression
 
 # OBJECTIVE FUNCTION
 #import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
@@ -63,9 +66,13 @@ class Test():
         n_restarts = 25
 
         # using a variable for options for better debug messages
-        SM_OPTION = 0           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+        SM_OPTION = 9           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
                                 # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
                                 # 5 = KNN regression, 6 = Decision Tree Regression
+                                # 7 = Matern, 8 = Lagrangian Linear Regression
+                                # 9 = Lagrangian Polynomial Regression
+
+
 
         # SURROGATE MODEL VARS
         if SM_OPTION == 0:
@@ -120,6 +127,34 @@ class Test():
             num_init_points = 1
             self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
             noError, errMsg = self.sm._check_configuration(num_init_points)
+
+        elif SM_OPTION == 7:
+            # Matern Process vars
+            DTR_max_depth = 1  # options: ints
+            num_init_points = 1
+            MP_length_scale = 1.1
+            MP_noise = 1e-10
+            MP_nu = 3/2
+            self.sm = MaternProcess(length_scale=MP_length_scale, noise=MP_noise, nu=MP_nu)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
+        elif SM_OPTION == 8:
+            # Lagrangian penalty linear regression vars
+            num_init_points = 2
+            LLReg_noise = 1e-10
+            LLReg_constraint_degree=1
+            self.sm = LagrangianLinearRegression(noise=LLReg_noise, constraint_degree=LLReg_constraint_degree)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
+        elif SM_OPTION == 9:
+            # Lagrangian penalty polynomial regression vars
+            num_init_points = 2
+            LPReg_degree = 5
+            LPReg_noise = 1e-10
+            LPReg_constraint_degree = 3
+            self.sm = LagrangianPolynomialRegression(degree=LPReg_degree, noise=LPReg_noise, constraint_degree=LPReg_constraint_degree)
+            noError, errMsg = self.sm._check_configuration(num_init_points)
+
 
 
     

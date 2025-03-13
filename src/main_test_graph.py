@@ -34,6 +34,8 @@ from surrogate_models.matern_process import MaternProcess
 from surrogate_models.lagrangian_linear_regression import LagrangianLinearRegression
 from surrogate_models.lagrangian_polynomial_regression import LagrangianPolynomialRegression
 
+
+
 # OBJECTIVE FUNCTION
 #import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
 import himmelblau.configs_F as func_configs         # single objective, 2D input
@@ -71,12 +73,12 @@ class TestGraph():
         n_restarts = 25
 
         # using a variable for options for better debug messages
-        SM_OPTION = 8           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+        SM_OPTION = 9           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
                                 # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
                                 # 5 = KNN regression, 6 = Decision Tree Regression
                                 # 7 = Matern, 8 = Lagrangian Linear Regression
                                 # 9 = Lagrangian Polynomial Regression
-                                # 10 = 
+
 
         # SURROGATE MODEL VARS
         if SM_OPTION == 0:
@@ -158,11 +160,6 @@ class TestGraph():
             LPReg_constraint_degree = 3
             self.sm = LagrangianPolynomialRegression(degree=LPReg_degree, noise=LPReg_noise, constraint_degree=LPReg_constraint_degree)
             noError, errMsg = self.sm._check_configuration(num_init_points)
-
-            # LWP_degree = 2
-            # LWP_num_constraints = 2
-            # self.sm = LagrangianWithPolynomialSurrogate(degree=LWP_degree)
-            # noError, errMsg = self.sm._check_configuration(num_init_points)
 
 
    
