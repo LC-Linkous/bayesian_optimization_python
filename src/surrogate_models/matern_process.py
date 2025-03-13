@@ -68,7 +68,6 @@ class MaternProcess:
         if not self.is_fitted:
             print("ERROR: MaternProcess model is not fitted yet")
             noErrors = False
-        X = np.atleast_2d(X)
 
         X = np.atleast_2d(X)
         self.X_sample = np.atleast_2d(self.X_sample)
