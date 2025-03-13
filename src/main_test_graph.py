@@ -186,9 +186,6 @@ class TestGraph():
 
         self.suppress_output = False    # Suppress the console output of particle swarm
 
-        detailedWarnings = False        # Optional boolean for detailed feedback
-                                        # (Independent of suppress output. 
-                                        #  Includes error messages and warnings)
 
         self.allow_update = True        # Allow objective call to update state 
 
@@ -198,7 +195,7 @@ class TestGraph():
                                                     self.func_F, self.constr_F, 
                                                     init_points=num_init_points, 
                                                     xi = xi, n_restarts=n_restarts, 
-                                                    parent=parent, detailedWarnings=detailedWarnings)
+                                                    parent=parent)
 
         # Matplotlib setup
         # # Initialize plot

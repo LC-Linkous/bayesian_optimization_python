@@ -24,13 +24,10 @@ class BayesianOptimization:
                 obj_func, constr_func,
                 init_points=2, 
                 xi = 0.01, n_restarts=25,
-                parent=None, detailedWarnings=False):
+                parent=None):
         
         # Optional parent class func call to write out values that trigger constraint issues
         self.parent = parent 
-        # Additional output for advanced debugging to TERMINAL. 
-        # Some of these messages will be returned via debugTigger
-        self.detailedWarnings = detailedWarnings 
 
         # problem height and width
         heightl = np.shape(lbound)[0]
