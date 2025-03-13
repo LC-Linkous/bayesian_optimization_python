@@ -36,10 +36,10 @@ class MaternProcess:
         return noError, errMsg
 
     # Matern kernel function
-    def matern_kernel(self, X1, X2):
-        X1 = np.atleast_2d(X1)
-        X2 = np.atleast_2d(X2)
-        dists = np.sum((X1[:, None, :] - X2[None, :, :]) ** 2, axis=2)
+    def matern_kernel(self, X, Y):
+        X = np.atleast_2d(X)
+        Y = np.atleast_2d(Y)
+        dists = np.sum((X[:, None, :] - Y[None, :, :]) ** 2, axis=2)
 
         if self.nu == 1/2:
             # Matern kernel with nu = 1/2 (rough process)
@@ -55,25 +55,29 @@ class MaternProcess:
             factor = (np.sqrt(2 * self.nu) * np.sqrt(dists)) / self.length_scale
             return (1 + factor) ** self.nu * np.exp(-factor)
 
-    def fit(self, X_sample, Y_sample):
+    def fit(self, X, Y):
         # returns mean and variance
-        self.X_sample = np.atleast_2d(X_sample)
-        self.Y_sample = np.atleast_2d(Y_sample)
+        self.X_sample = np.atleast_2d(X)
+        self.Y_sample = np.atleast_2d(Y)
         self.K = self.matern_kernel(self.X_sample, self.X_sample) + self.noise * np.eye(len(self.X_sample))
         self.K_inv = np.linalg.inv(self.K)
         self.is_fitted = True
 
-    def predict(self, X, out_dims=2):
+    def predict(self, X, out_vars=None):
         noErrors = True
         if not self.is_fitted:
             print("ERROR: MaternProcess model is not fitted yet")
             noErrors = False
         X = np.atleast_2d(X)
+
+        X = np.atleast_2d(X)
+        self.X_sample = np.atleast_2d(self.X_sample)
+
         try:
             self.K_s = self.matern_kernel(self.X_sample, X)
             self.K_ss = self.matern_kernel(X, X) + self.noise * np.eye(len(X))
 
-            ysample = self.Y_sample.reshape(-1, out_dims)
+            ysample = self.Y_sample.reshape(self.Y_sample.shape[0], -1)
             mu_s = self.K_s.T.dot(self.K_inv).dot(ysample)
             mu_s = mu_s.ravel()
         except:
