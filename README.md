@@ -130,43 +130,17 @@ This is an example for if you've had a difficult time with the requirements.txt 
 ### Initialization 
 
 ```python
-    # Constant variables
-    NO_OF_PARTICLES = 11         # Number of particles in swarm
-    TOL = 10 ** -18              # Convergence Tolerance
-    MAXIT = 10000                # Maximum allowed iterations
-    BOUNDARY = 1                 # int boundary 1 = random,      2 = reflecting
-                                 #              3 = absorbing,   4 = invisible
+        # Constant variables
+        opt_params = {'XI': [xi],                   # exploration float
+                    'NUM_RESTARTS': [n_restarts],   # number of predition restarts
+                    'INIT_PTS': [num_init_points]}  # initial number of samples
 
-    # Objective function dependent variables
-    func_F = func_configs.OBJECTIVE_FUNC  # objective function
-    constr_F = func_configs.CONSTR_FUNC   # constraint function
 
-    LB = func_configs.LB              # Lower boundaries, [[0.21, 0, 0.1]]
-    UB = func_configs.UB              # Upper boundaries, [[1, 1, 0.5]]   
-    OUT_VARS = func_configs.OUT_VARS  # Number of output variables (y-values)
-    TARGETS = func_configs.TARGETS    # Target values for output
-
-    # optimizer constants
-    WEIGHTS = [[0.5, 0.7, 0.78]]       # Update vector weights
-    VLIM = 1                           # Initial velocity limit
-
-    best_eval = 1
-    parent = None            # for the optimizer test ONLY
-    suppress_output = True   # Suppress the console output of particle swarm
-    allow_update = True      # Allow objective call to update state 
-
-    # Constant variables
-    opt_params = {'NO_OF_PARTICLES': [NO_OF_PARTICLES], # Number of particles in swarm
-                'BOUNDARY': [BOUNDARY],                 # int boundary 1 = random,      2 = reflecting
-                                                        #   3 = absorbing,   4 = invisible
-                'WEIGHTS': [WEIGHTS],                   # Update vector weights
-                'VLIM':  [VLIM] }                       # Initial velocity limit
-
-    opt_df = pd.DataFrame(opt_params)
-    myOptimizer = swarm(LB, UB, TARGETS, TOL, MAXIT,
-                            func_F, constr_F,
-                            opt_df,
-                            parent=parent)  
+        opt_df = pd.DataFrame(opt_params)
+        self.bayesOptimizer = BayesianOptimization(LB, UB, TARGETS, TOL, MAXIT,
+                                self.func_F, self.constr_F, 
+                                opt_df,
+                                parent=parent)   
 
     # arguments should take form: 
     # swarm([[float, float, ...]], [[float, float, ...]], [[float, ...]], float, int,
@@ -175,10 +149,9 @@ This is an example for if you've had a difficult time with the requirements.txt 
     # class obj) 
     #  
     # opt_df contains class-specific tuning parameters
-    # NO_OF_PARTICLES: int
-    # weights: [[float, float, float]]
-    # boundary: int. 1 = random, 2 = reflecting, 3 = absorbing,   4 = invisible
-    # vlim: float
+    # xi: float
+    # n_restarts: int
+    # num_init_points: int
 
 ```
 
