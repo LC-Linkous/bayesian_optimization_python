@@ -469,10 +469,9 @@ The code in this repository has been released under GPL-2.0
 
 This code can be referenced using the following DOI:
 
-`10.5281/zenodo.15047769`
-
+` `
 
 In IEEE format:
 
-Linkous, L (2024) bayesian_optimization_python [Software]. https://github.com/LC-Linkous/bayesian_optimization_python. DOI: 10.5281/zenodo.15047769
+Linkous, L (2024) bayesian_optimization_python [Software]. https://github.com/LC-Linkous/bayesian_optimization_python. DOI: ` `
 
