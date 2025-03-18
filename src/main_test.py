@@ -8,7 +8,7 @@
 #       model in 'gaussian_process.py'.
 #   Format updates are for integration in the AntennaCAT GUI.
 #
-#   Author(s): Lauren Linkous, Jonathan Lundquist
+#   Author(s): Lauren Linkous
 #   Last update: March 12, 2025
 ##--------------------------------------------------------------------\
 
@@ -164,7 +164,7 @@ class Test():
             print(errMsg)
             return
 
-        self.best_eval = 9999    # set higher than normal because of the potential for missing the target
+        self.best_eval = 10     # set higher than normal because of the potential for missing the target
 
         parent = self            # Optional parent class for swarm 
                                             # (Used for passing debug messages or
@@ -218,12 +218,6 @@ class Test():
         return variance
 
     def run(self):        
-
-        '''
-        this might be stepping twice before allowing updates
-
-        '''
-
 
         # instantiation of particle swarm optimizer 
         while not self.bayesOptimizer.complete():

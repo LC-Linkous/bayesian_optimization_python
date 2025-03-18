@@ -10,7 +10,7 @@
 #   This version builds from 'main_test.py' to include a 
 #       matplotlib plot of objective function and surrogate model
 #
-#   Author(s): Lauren Linkous, Jonathan Lundquist
+#   Author(s): Lauren Linkous
 #   Last update: March 12, 2025
 ##--------------------------------------------------------------------\
 

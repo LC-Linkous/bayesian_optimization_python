@@ -8,7 +8,7 @@
 #   a parent, which also passes arguments to the surrogate model.
 #      
 #
-#   Author(s): Lauren Linkous, Jonathan Lundquist
+#   Author(s): Lauren Linkous
 #   Last update: December 5, 2024
 ##--------------------------------------------------------------------\
 
