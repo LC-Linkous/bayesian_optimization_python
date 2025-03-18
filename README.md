@@ -1,26 +1,14 @@
 # bayesian_optimization_python
 Repository for demoing the effect of various surrogate models on Bayesian Optimization accuracy. 
 
-
-The class format is based off of the [adaptive timestep PSO optimizer](https://github.com/jonathan46000/pso_python) by [jonathan46000](https://github.com/jonathan46000) for data collection baseline. This repo does not feature any PSO optimization. Instead, the format has been used to retain modularity with other optimizers.
-
 The surrogate models are designed to interface with the optimizers in the AntennaCAT suite. See [References](#references) for the running list of references as optimizers and surrogate models are added/edited, and features are updated.
-
-Now featuring AntennaCAT hooks for GUI integration and user input handling.
 
 ## Table of Contents
 * [Bayesian Search](#bayesian-search)
 * [Surrogate Models](#surrogate-models)
-    * [Radial Basis Function Network](#radial-basis-function-network)
+    * [Class Structure](#class-structure)
     * [Gaussian Process](#gaussian-process)
-    * [Kriging](#kriging)
-    * [Polynomial Regression](#polynomial-regression)
-    * [Polynomial Chaos Expansion](#polynomial-chaos-expansion)
-    * [K-Nearest Neighbors Regression](#k-nearest-neighbors-regression)
-    * [Decision Tree Regression](#decision-tree-regression)
-    * [Lagrangian Linear Regression](#lagrangian-linear-regression)
-    * [Lagrangian Polynomial Regression](#lagrangian-polynomial-regression)
-    * [Matern Process](#matern-process)
+    * [Model Options](#model-options)    
 * [Requirements](#requirements)
 * [Implementation](#implementation)
     * [Initialization](#initialization) 
@@ -42,55 +30,107 @@ Now featuring AntennaCAT hooks for GUI integration and user input handling.
 Bayesian search, or Bayesian optimization, uses probabilistic models to efficiently optimize functions that are computationally expensive or resource intensive to evaluate. It iteratively updates a Bayesian model of the objective function based on sampled evaluations (of the objective function). 
 
 ## Surrogate Models
-A surrogate model in optimization serves as a proxy for the actual objective function, which may be costly or impractical to evaluate directly. It approximates the behavior of the objective function using a simpler, computationally efficient model, such as the Gaussian Process (GP) model included in this repository. This surrogate model is iteratively updated based on evaluations of the actual objective function, improving its accuracy over time. It allows optimization algorithms to make informed decisions about where to explore next in the search space, balancing between exploiting known good regions and exploring potentially better ones. Surrogate models are fundamental in speeding up optimization processes by reducing the number of expensive evaluations needed to find optimal solutions.
 
-For comparison and experimental purproses, there is a small library of surrogate models included in this repository that can be used with the included Bayesian optimizer. They are:
+A surrogate model in optimization serves as a proxy for the actual objective function, which may be costly or impractical to evaluate directly. It approximates the behavior of the objective function using a simpler, computationally efficient model, such as the Gaussian Process (GP) model included in this repository. This surrogate model is iteratively updated based on evaluations of the actual objective function, improving its accuracy over time. It allows optimization algorithms to make informed decisions about where to explore next in the search space, balancing between exploiting known ‘good’ regions and exploring potentially better ones. Surrogate models are fundamental in speeding up optimization processes by reducing the number of expensive evaluations needed to find optimal solutions.
 
+For comparison and experimental purposes, there is a small library of surrogate models included in this repository that can be used with the included Bayesian optimizer. 
 
-### Radial Basis Function Network
-A Radial Basis Function Network (RBFN) is a type of artificial neural network that uses radial basis functions as activation functions. It consists of three layers: an input layer, a hidden layer with a non-linear RBF activation function (typically Gaussian), and a linear output layer. The simple approach in this repo uses numpy and basic matrix math rather than a ML specific library. RBFNs are commonly used for function approximation, time-series prediction, and classification tasks. They are valued for their simplicity, ease of training, and ability to model complex, non-linear relationships with a smaller number of neurons compared to other neural network architectures (which means a smaller matrix).
+### Class Structure
+The following class structure with the Gaussian Process Kernel is demonstrative of the general structure of surrogate model classes within this repository. They are designed to be modular and interface with a controller class.  
+```python
 
+# class declaration, no inheritance.
+class GaussianProcess:
+    # initialization with input arguments unique to surrogate model
+    def __init__(self, length_scale=1.1, noise=1e-10):
+        self.length_scale = length_scale
+        self.K_s = None
+        self.K_ss = None
+        self.noise = noise
+        # all surrogate models have an is_fitted boolean
+        self.is_fitted = False
 
-### Gaussian Process
+    # configuration check for surrogate models
+    # at least the number of initial points is checked for the model
+    # other checks may be needed based on the model configuration
+    def _check_configuration(self, init_pts):
+        noError, errMsg = self._check_initial_points(init_pts)
+        return noError, errMsg
+        
+    def _check_initial_points(self, init_pts):
+        MIN_INIT_POINTS = 1
+        errMsg = ""
+        noError = True        
+        if init_pts < MIN_INIT_POINTS:
+            errMsg = "ERROR: minimum required initial points is" + str(MIN_INIT_POINTS)
+            noError = False
+        return noError, errMsg
 
-A Gaussian process (GP) is a probabilistic model used primarily in machine learning and optimization. It defines a distribution over functions, where each point in the function's domain is assigned a Gaussian distribution. GPs are characterized by their mean function (typically assumed to be zero) and covariance function (kernel), which determines the relationships between different points. GPs are flexible and powerful tools for regression and uncertainty quantification, allowing predictions not only of the function values but also of the uncertainty associated with those predictions. 
+    
+    # Functions unique to the surrogate model
+    def rbf_kernel(self, X1, X2):
+        X1 = np.atleast_2d(X1)
+        X2 = np.atleast_2d(X2)
+        dists = np.sum((X1[:, None, :] - X2[None, :, :]) ** 2, axis=2)
+        return np.exp(-0.5 * dists / self.length_scale**2)
 
+    # Functions shared between all surrogate model classes
+    def fit(self, X_sample, Y_sample):
+        self.X_sample = np.atleast_2d(X_sample)
+        self.Y_sample = np.atleast_2d(Y_sample)
+        self.K = self.rbf_kernel(self.X_sample, self.X_sample) + self.noise * np.eye(len(self.X_sample))
+        self.K_inv = np.linalg.inv(self.K)
+        self.is_fitted = True
 
-### Kriging
+    def predict(self, X, out_dims=2):
+        noErrors = True
+        if not self.is_fitted:
+            print("ERROR: GaussianProcess model is not fitted yet")
+            noErrors = False
+        X = np.atleast_2d(X)
+        try:
+            self.K_s = self.rbf_kernel(self.X_sample, X)
+            self.K_ss = self.rbf_kernel(X, X) + self.noise * np.eye(len(X))
 
-Kriging, like Gaussian processes, is a technique used for interpolation and approximation of data points. Kriging models the spatial correlation between data points to predict values at unsampled locations. It uses a linear combination of data points with weights determined by spatial covariance functions (kriging models) to estimate values and quantify prediction uncertainty. Kriging is advantageous in fields like spatial statistics, where it provides accurate predictions and uncertainty estimates based on known data points' spatial relationships. 
+            ysample = self.Y_sample.reshape(-1, out_dims)
+            mu_s = self.K_s.T.dot(self.K_inv).dot(ysample)
+            mu_s = mu_s.ravel()
+        except:
+            mu_s = []
+            noErrors = False
+        return mu_s, noErrors
+    
 
-Kriging is a specialized form of Gaussian process regression tailored for spatial datasets, emphasizing the spatial autocorrelation structure to improve prediction accuracy in geospatial applications and beyond.
+    def calculate_variance(self):
+        #used for calculating expected improvement, but not applying objective func. Not all surrogate models have a variance, but 
+        # to remain interchangable they do return an array or value. 
 
+        cov_s = self.K_ss - self.K_s.T.dot(self.K_inv).dot(self.K_s) 
+        return np.diag(cov_s)
 
-### Polynomial Regression
+```
 
-Polynomial regression is a form of regression analysis where the relationship between the independent variable x and the dependent variable y is modeled as an n-th degree polynomial function. Unlike linear regression, which assumes a linear relationship, polynomial regression can capture non-linear relationships between variables. 
+### Model Options
 
+* **Radial Basis Function** - A Radial Basis Function Network (RBFN) is a type of artificial neural network that uses radial basis functions as activation functions. The simple approach in this repository uses numpy and basic matrix math rather than a ML specific library.
 
+* **Gaussian Process** - A Gaussian process (GP) is a probabilistic model that defines a distribution over functions, where each point in the function's domain is assigned a Gaussian distribution. GPs are characterized by their mean function (typically assumed to be zero) and covariance function (kernel), which determines the relationships between different points.
 
-### Polynomial Chaos Expansion
+* **Kriging** - Kriging, like Gaussian processes, is a technique used for interpolation and approximation of data points. Kriging models the spatial correlation between data points to predict values at unsampled locations using a linear combination of data points with weights determined by spatial covariance functions (kriging models).
 
-Polynomial Chaos Expansion (PCE) is a method used in uncertainty quantification and sensitivity analysis. It expresses a stochastic model's output as a series expansion in terms of orthogonal polynomials, typically Hermite, Legendre, or other families depending on the underlying probability distribution. Each polynomial corresponds to a different order of the stochastic variables, capturing the variability and uncertainty in the model's parameters or inputs. PCE provides a way to efficiently compute statistical moments, such as mean and variance, and quantify how uncertainties in input parameters propagate through the model to affect output variability
+* **Polynomial Regression** - Polynomial regression is a form of regression analysis where the relationship between the independent variable x and the dependent variable y is modeled as an n-th degree polynomial function. 
 
+* **Polynomial Chaos Expansion** - Polynomial Chaos Expansion (PCE) expresses a stochastic model's output as a series expansion in terms of orthogonal polynomials. 
 
-### K-Nearest Neighbors Regression
+* **K-Nearest Neighbors Regression** - As part of a Bayesian optimizer, the K-Nearest Neighbors (KNN) model predicts the objective function's value at a new point based on the values of its k nearest neighbors in the training data. It does not do well on the included Himmelblau function example as the parameters are currently set.
 
-As part of a Bayesian optimizer, the K-Nearest Neighbors (KNN) model predicts the objective function's value at a new point based on the values of its k nearest neighbors in the training data. By using the distances and weights of these neighbors, it estimates the function value, guiding the optimizer to explore promising regions of the search space. KNN is valued for its simplicity and non-parametric nature, making it flexible for various optimization problems. However, it may struggle with high-dimensional data. It does not do well on the Himmelblau function as the parameters are currently set.
+* **Decision Tree Regression** - Decision Tree Regression is a predictive modeling technique used for continuous target variables, recursively splitting the data into subsets based on the feature that minimizes the mean squared error (MSE) at each split. Each internal node represents a feature, and each leaf node represents a predicted value, usually the mean of the target values in that region.
 
-### Decision Tree Regression
+* **Lagrangian Linear Regression** - Lagrangian Linear Regression is a technique that uses Lagrange multipliers to enforce constraints on the linear regression model. It adds a penalty term to the cost function to control model complexity and prevent overfitting.
 
-Decision Tree Regression is a predictive modeling technique used for continuous target variables. It works by recursively splitting the data into subsets based on the feature that minimizes the mean squared error (MSE) at each split. Each internal node represents a feature, and each leaf node represents a predicted value, usually the mean of the target values in that region. This method captures non-linear relationships and is easy to interpret. However, it can overfit the training data, so techniques like pruning or using ensemble methods (e.g., Random Forests) are often employed to enhance its performance and generalization ability.
+* **Lagrangian Polynomial Regression** - Lagrangian Polynomial Regression is a method that uses Lagrange multipliers to fit a polynomial model to data while imposing constraints on the model's complexity or behavior.
 
-
-### Lagrangian Linear Regression
-Lagrangian Linear Regression is a technique that uses Lagrange multipliers to enforce constraints on the linear regression model, typically for regularization purposes. It adds a penalty term to the cost function to control model complexity and prevent overfitting. The Lagrange multipliers are used to optimize the trade-off between fitting the data and adhering to the regularization constraint. 
-
-### Lagrangian Polynomial Regression
-Lagrangian Polynomial Regression is a method that uses Lagrange multipliers to fit a polynomial model to data while imposing constraints on the model's complexity or behavior. Lagrange multipliers help to minimize the error between the data points and the polynomial while ensuring that the polynomial satisfies any specified conditions or regularization constraints (this implemenation does not use explicit constraints for the surrogate model right now).
-
-### Matern Process
-A Matern process is a type of covariance function used in Gaussian process regression and Bayesian optimization to model spatial or temporal correlations between data points. It offers flexibility in representing the smoothness of the underlying function by adjusting a parameter that controls the roughness, making it suitable for irregular or non-smooth optimization problems. The current implementation is rough and will likely be updated in the future.
+* **Matern Process** - A Matern process is a type of covariance function used in Gaussian process regression and Bayesian optimization to model spatial or temporal correlations between data points. The current implementation is rough and will likely be updated in the future.
 
 ## Requirements
 
@@ -135,7 +175,6 @@ This is an example for if you've had a difficult time with the requirements.txt 
         opt_params = {'XI': [xi],                   # exploration float
                     'NUM_RESTARTS': [n_restarts],   # number of predition restarts
                     'INIT_PTS': [num_init_points]}  # initial number of samples
-
 
         opt_df = pd.DataFrame(opt_params)
         self.bayesOptimizer = BayesianOptimization(LB, UB, TARGETS, TOL, MAXIT,
@@ -279,7 +318,6 @@ def func_F(X, NO_OF_OUTS=1):
     return [F], noErrors
 ```
 
-
 #### Internal Objective Function Example
 
 There are three functions included in the repository:
@@ -378,11 +416,9 @@ Global minima at $(0.974857, -0.954872)$
 
 The figure above shows a low-resolution version of the optimization for example. In this first figure, the Far left plot is the objective ground truth function with sample locations in red. The center plot is the expected improvement, which highlights areas of interest to the optimizer. The far right plot is the current shape of the surrogate model, with sampled points from the ground truth in red. The other two graphs present a similar process for different dimensions of objective functions.
 
-
 NOTE: if you close the graph as the code is running, the code will continue to run, but the graph will not re-open.
 
 ## References
-
 
 [1] Wikipedia Contributors, “Himmelblau’s function,” Wikipedia, Dec. 29, 2023. https://en.wikipedia.org/wiki/Himmelblau%27s_function 
 
@@ -402,7 +438,6 @@ NOTE: if you close the graph as the code is running, the code will continue to r
 
 [9] Wikipedia Contributors, “Kriging,” Wikipedia, Oct. 16, 2018. https://en.wikipedia.org/wiki/Kriging
 
-
 [10] “Polynomial kernel,” Wikipedia, Oct. 02, 2019. https://en.wikipedia.org/wiki/Polynomial_kernel
 
 [11] A. Radhakrishnan, M. Luyten, G. Stefanakis, and C. Cai, “Lecture 3: Kernel Regression,” 2022. Available: https://web.mit.edu/modernml/course/lectures/MLClassLecture3.pdf
@@ -421,10 +456,14 @@ NOTE: if you close the graph as the code is running, the code will continue to r
 
 [18] Wikipedia Contributors, “Decision tree learning,” Wikipedia, Jun. 12, 2019. https://en.wikipedia.org/wiki/Decision_tree_learning
 
-
 ## Related Publications and Repositories
 This software works as a stand-alone implementation, and as one of the optimizers integrated into AntennaCAT.
 
 ## Licensing
 
 The code in this repository has been released under GPL-2.0
+
+
+## How to Cite
+
+
