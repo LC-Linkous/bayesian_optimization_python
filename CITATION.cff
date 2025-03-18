@@ -1,9 +1,11 @@
-@software{bayesian_optimization_python,
-  author = {Linkous, Lauren},
-  doi = {10.5281/zenodo.15047769},
-  month = {06},
-  title = {{bayesian_optimization_python}},
-  url = {https://github.com/LC-Linkous/bayesian_optimization_python},
-  version = {1.0},
-  year = {2024}
-}
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Linkous"
+  given-names: "Lauren"
+  orcid: "https://orcid.org/0000-0001-9945-5125"
+title: "bayesian_optimization_python"
+version: 1.0
+doi: 10.5281/zenodo.15047769
+date-released: {2024}
+url: "https://github.com/LC-Linkous/bayesian_optimization_python"
