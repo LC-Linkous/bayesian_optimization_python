@@ -476,5 +476,6 @@ This code can be referenced using the following DOI:
 
 In IEEE format:
 
-Linkous, L (2024) bayesian_optimization_python [Software]. https://github.com/LC-Linkous/bayesian_optimization_python. DOI: `10.5281/zenodo.15047769`
+
+L. Linkous, "bayesian_optimization_python". GitHub, 2024. [Software]. https://github.com/LC-Linkous/bayesian_optimization_python. DOI: `10.5281/zenodo.15047769`
 
