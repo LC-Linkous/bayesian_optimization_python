@@ -476,16 +476,3 @@ In IEEE format:
 
 Linkous, L (2024) bayesian_optimization_python [Software]. https://github.com/LC-Linkous/bayesian_optimization_python. DOI: 10.5281/zenodo.15047769
 
-
-
-As BibTeX:
-
-@software{bayesian_optimization_python,
-  author = {Linkous, Lauren},
-  doi = {10.5281/zenodo.15047769},
-  month = {06},
-  title = {{bayesian_optimization_python}},
-  url = {https://github.com/LC-Linkous/bayesian_optimization_python},
-  version = {1.0},
-  year = {2024}
-}
