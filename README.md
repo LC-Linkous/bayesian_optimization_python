@@ -7,7 +7,6 @@ The surrogate models are designed to interface with the optimizers in the Antenn
 * [Bayesian Search](#bayesian-search)
 * [Surrogate Models](#surrogate-models)
     * [Class Structure](#class-structure)
-    * [Gaussian Process](#gaussian-process)
     * [Model Options](#model-options)    
 * [Requirements](#requirements)
 * [Implementation](#implementation)
@@ -24,6 +23,8 @@ The surrogate models are designed to interface with the optimizers in the Antenn
 * [References](#references)
 * [Related Publications and Repositories](#related-publications-and-repositories)
 * [Licensing](#licensing)   
+* [How to Cite](#how-to-cite)
+
 
 ## Bayesian Search
 
