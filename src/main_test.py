@@ -241,7 +241,7 @@ class Test():
             if (eval < self.best_eval) and (eval != 0):
                 self.best_eval = eval
             if self.suppress_output:
-                if iter%500 ==0: #print out every 10th iteration update
+                if iter%10 ==0: #print out every 10th iteration update
                     print("Iteration")
                     print(iter)
                     print("Best Eval")
