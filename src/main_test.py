@@ -14,6 +14,7 @@
 
 
 import pandas as pd
+import numpy as np
 import time
 
 # OPTIMIZER
@@ -44,8 +45,20 @@ class Test():
         UB = func_configs.UB                    # Upper boundaries
         IN_VARS = func_configs.IN_VARS          # Number of input variables (x-values)
         OUT_VARS = func_configs.OUT_VARS        # Number of output variables (y-values)
-        TARGETS = func_configs.TARGETS          # Target values for output
         GLOBAL_MIN = func_configs.GLOBAL_MIN    # Global minima, if they exist
+        TARGETS = func_configs.TARGETS          # Target values for output
+
+        # target format. TARGETS = [0, ...] 
+
+        # threshold is same dims as TARGETS
+        # 0 = use target value as actual target. value should EQUAL target
+        # 1 = use as threshold. value should be LESS THAN OR EQUAL to target
+        # 2 = use as threshold. value should be GREATER THAN OR EQUAL to target
+        #DEFAULT THRESHOLD
+        THRESHOLD = np.zeros_like(TARGETS) 
+        #THRESHOLD = np.ones_like(TARGETS)
+        #THRESHOLD = [0, 1, 0]
+
 
         # Objective function dependent variables
         self.func_F = func_configs.OBJECTIVE_FUNC  # objective function
@@ -67,7 +80,7 @@ class Test():
         n_restarts = 25
 
         # using a variable for options for better debug messages
-        SM_OPTION = 9           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+        SM_OPTION = 2           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
                                 # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
                                 # 5 = KNN regression, 6 = Decision Tree Regression
                                 # 7 = Matern, 8 = Lagrangian Linear Regression
@@ -164,18 +177,14 @@ class Test():
             print(errMsg)
             return
 
-        self.best_eval = 10     # set higher than normal because of the potential for missing the target
-
+        self.best_eval = 3       # set higher than normal because of the potential for missing the target
         parent = self            # Optional parent class for swarm 
                                             # (Used for passing debug messages or
                                             # other information that will appear 
                                             # in GUI panels)
-
         self.suppress_output = False    # Suppress the console output of optimizer
-
-
         self.allow_update = True        # Allow objective call to update state 
-
+        evaluate_threshold = True       # use target or threshold. True = THRESHOLD, False = EXACT TARGET
 
         # Constant variables
         opt_params = {'XI': [xi],                   # exploration float
@@ -187,8 +196,8 @@ class Test():
         self.bayesOptimizer = BayesianOptimization(LB, UB, TARGETS, TOL, MAXIT,
                                 self.func_F, self.constr_F, 
                                 opt_df,
-                                parent=parent)  
-
+                                parent=parent, 
+                                evaluate_threshold=evaluate_threshold, obj_threshold=THRESHOLD)  
 
 
     def debug_message_printout(self, txt):
@@ -232,7 +241,7 @@ class Test():
             if (eval < self.best_eval) and (eval != 0):
                 self.best_eval = eval
             if self.suppress_output:
-                if iter%10 ==0: #print out every 10th iteration update
+                if iter%500 ==0: #print out every 10th iteration update
                     print("Iteration")
                     print(iter)
                     print("Best Eval")
