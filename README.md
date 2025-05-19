@@ -250,7 +250,7 @@ This optimizer has 4 different types of bounds, Random (Particles that leave the
 
 Some updates have not incorporated appropriate handling for all boundary conditions. This bug is known and is being worked on. The most consistent boundary type at the moment is Random. If constraints are violated, but bounds are not, currently random bound rules are used to deal with this problem. 
 
-### Multi-Object Optimization
+### Multi-Objective Optimization
 The no preference method of multi-objective optimization, but a Pareto Front is not calculated. Instead, the best choice (smallest norm of output vectors) is listed as the output.
 
 ### Objective Function Handling
