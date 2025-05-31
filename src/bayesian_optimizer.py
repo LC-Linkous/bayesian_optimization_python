@@ -9,7 +9,7 @@
 #      
 #
 #   Author(s): Lauren Linkous
-#   Last update: December 5, 2024
+#   Last update: May 30, 2025
 ##--------------------------------------------------------------------\
 
 
@@ -168,14 +168,16 @@ class BayesianOptimization:
             return
         else:        
             self.allow_update = 1
-        
+
+        # these cases are different for the error messages, and some features in development for prediction. This couls be streamlined
+
         # case 0: first point of initial points (must have minimum 1)
         if self.objective_function_case == 0:
             new_M = self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], (1, len(self.ubound))).reshape(1,len(self.ubound))
             newFVals, noError = self.obj_func(new_M[0], self.output_size)  # Cumulative Fvals
 
             if noError == True:
-                newFVals = np.array([newFVals])#.reshape(-1, 1)  # kept for comparison between other optimzers
+                self.Fvals = np.array([newFVals]).reshape(-1, 1) 
                 self.M = new_M
                 self.F_Pb = newFVals
             else:
@@ -189,7 +191,7 @@ class BayesianOptimization:
             new_M = self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], (1, len(self.ubound))).reshape(1,len(self.ubound))
             newFVals, noError = self.obj_func(new_M[0], self.output_size) 
             if noError == True:
-                newFVals = np.array([newFVals])#.reshape(-1, 1) 
+                self.Fvals = np.array([newFVals]).reshape(-1, 1) 
                 self.M = np.vstack([self.M, new_M])
                 self.F_Pb = np.vstack((self.F_Pb, newFVals))#.reshape(-1, 1) 
 
@@ -211,6 +213,8 @@ class BayesianOptimization:
                 self.Fvals = np.array([newFVals]).reshape(-1, 1) 
                 #self.Flist = abs(self.targets - self.Fvals)
                 # EVALUATE OBJECTIVE FUNCTION - TARGET OR THRESHOLD
+                # this evaluation happens here because there's enough points 
+                # to actually build and evaluate the surrogate model approximation
                 self.Flist = self.objective_function_evaluation(self.Fvals, self.targets)# abs(self.targets - self.Fvals)
                 self.M = np.vstack((self.M, self.new_point))
                 self.F_Pb = np.vstack((self.F_Pb, newFVals))#.reshape(-1, 1) 

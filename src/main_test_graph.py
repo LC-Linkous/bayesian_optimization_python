@@ -11,7 +11,7 @@
 #       matplotlib plot of objective function and surrogate model
 #
 #   Author(s): Lauren Linkous
-#   Last update: March 12, 2025
+#   Last update: May 30, 2025
 ##--------------------------------------------------------------------\
 
 
@@ -74,7 +74,7 @@ class TestGraph():
         n_restarts = 25
 
         # using a variable for options for better debug messages
-        SM_OPTION = 9           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+        SM_OPTION = 5           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
                                 # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
                                 # 5 = KNN regression, 6 = Decision Tree Regression
                                 # 7 = Matern, 8 = Lagrangian Linear Regression
