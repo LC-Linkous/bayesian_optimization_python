@@ -9,7 +9,7 @@
 #   Format updates are for integration in the AntennaCAT GUI.
 #
 #   Author(s): Lauren Linkous
-#   Last update:  June 20, 2025
+#   Last update: June 28, 2025
 ##--------------------------------------------------------------------\
 
 
@@ -94,53 +94,53 @@ class Test():
             RBF_kernel  = 'gaussian' #options: 'gaussian', 'multiquadric'
             RBF_epsilon = 1.0
             num_init_points = 1
-            self.sm = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)  
-            noError, errMsg = self.sm._check_configuration(num_init_points, RBF_kernel)
+            sm_bayes = RBFNetwork(kernel=RBF_kernel, epsilon=RBF_epsilon)  
+            noError, errMsg = sm_bayes._check_configuration(num_init_points, RBF_kernel)
 
         elif SM_OPTION == 1:
             # Gaussian Process vars
             GP_noise = 1e-10
             GP_length_scale = 1.0
             num_init_points = 1
-            self.sm = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise) 
-            noError, errMsg = self.sm._check_configuration(num_init_points)
+            sm_bayes = GaussianProcess(length_scale=GP_length_scale,noise=GP_noise) 
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
         elif SM_OPTION == 2:
             # Kriging vars
             K_noise = 1e-10
             K_length_scale = 1.0   
             num_init_points = 2 
-            self.sm = Kriging(length_scale=K_length_scale, noise=K_noise)
-            noError, errMsg = self.sm._check_configuration(num_init_points)
+            sm_bayes = Kriging(length_scale=K_length_scale, noise=K_noise)
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
         elif SM_OPTION == 3:
             # Polynomial Regression vars
             PR_degree = 5
             num_init_points = 1
-            self.sm = PolynomialRegression(degree=PR_degree)
-            noError, errMsg = self.sm._check_configuration(num_init_points)
+            sm_bayes = PolynomialRegression(degree=PR_degree)
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
         elif SM_OPTION == 4:
             # Polynomial Chaos Expansion vars
             PC_degree = 5 
             num_init_points = 1
-            self.sm = PolynomialChaosExpansion(degree=PC_degree)
-            noError, errMsg = self.sm._check_configuration(num_init_points)
+            sm_bayes = PolynomialChaosExpansion(degree=PC_degree)
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
         elif SM_OPTION == 5:
             # KNN regression vars
             KNN_n_neighbors=3
             KNN_weights='uniform'  #options: 'uniform', 'distance'
             num_init_points = 1
-            self.sm = KNNRegression(n_neighbors=KNN_n_neighbors, weights=KNN_weights)
-            noError, errMsg = self.sm._check_configuration(num_init_points)
+            sm_bayes = KNNRegression(n_neighbors=KNN_n_neighbors, weights=KNN_weights)
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
         elif SM_OPTION == 6:
             # Decision Tree Regression vars
             DTR_max_depth = 5  # options: ints
             num_init_points = 1
-            self.sm = DecisionTreeRegression(max_depth=DTR_max_depth)
-            noError, errMsg = self.sm._check_configuration(num_init_points)
+            sm_bayes = DecisionTreeRegression(max_depth=DTR_max_depth)
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
         elif SM_OPTION == 7:
             # Matern Process vars
@@ -149,16 +149,16 @@ class Test():
             MP_length_scale = 1.1
             MP_noise = 1e-10
             MP_nu = 3/2
-            self.sm = MaternProcess(length_scale=MP_length_scale, noise=MP_noise, nu=MP_nu)
-            noError, errMsg = self.sm._check_configuration(num_init_points)
+            sm_bayes = MaternProcess(length_scale=MP_length_scale, noise=MP_noise, nu=MP_nu)
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
         elif SM_OPTION == 8:
             # Lagrangian penalty linear regression vars
             num_init_points = 2
             LLReg_noise = 1e-10
             LLReg_constraint_degree=1
-            self.sm = LagrangianLinearRegression(noise=LLReg_noise, constraint_degree=LLReg_constraint_degree)
-            noError, errMsg = self.sm._check_configuration(num_init_points)
+            sm_bayes = LagrangianLinearRegression(noise=LLReg_noise, constraint_degree=LLReg_constraint_degree)
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
         elif SM_OPTION == 9:
             # Lagrangian penalty polynomial regression vars
@@ -166,8 +166,8 @@ class Test():
             LPReg_degree = 5
             LPReg_noise = 1e-10
             LPReg_constraint_degree = 3
-            self.sm = LagrangianPolynomialRegression(degree=LPReg_degree, noise=LPReg_noise, constraint_degree=LPReg_constraint_degree)
-            noError, errMsg = self.sm._check_configuration(num_init_points)
+            sm_bayes = LagrangianPolynomialRegression(degree=LPReg_degree, noise=LPReg_noise, constraint_degree=LPReg_constraint_degree)
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
 
 
@@ -189,7 +189,8 @@ class Test():
         # Constant variables
         opt_params = {'XI': [xi],                   # exploration float
                     'NUM_RESTARTS': [n_restarts],   # number of predition restarts
-                    'INIT_PTS': [num_init_points]}  # initial number of samples
+                    'INIT_PTS': [num_init_points],  # initial number of samples
+                    'SM_MODEL': [sm_bayes]}         # the surrogate model class object
 
 
         opt_df = pd.DataFrame(opt_params)
@@ -207,24 +208,6 @@ class Test():
         curTime = time.strftime("%H:%M:%S", time.localtime())
         msg = "[" + str(curTime) +"] " + str(txt)
         print(msg)
-
-
-    # SURROGATE MODEL FUNCS
-    def fit_model(self, x, y):
-        # call out to parent class to use surrogate model
-        self.sm.fit(x,y)
-        
-
-    def model_predict(self, x):
-        # call out to parent class to use surrogate model
-        #'mean' is regressive definition. not statistical
-        #'variance' only applies for some surrogate models
-        mean, noErrors = self.sm.predict(x, self.out_vars)
-        return mean, noErrors
-
-    def model_get_variance(self):
-        variance = self.sm.calculate_variance()
-        return variance
 
     def run(self):        
 

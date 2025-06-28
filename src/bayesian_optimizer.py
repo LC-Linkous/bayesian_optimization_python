@@ -77,7 +77,8 @@ class BayesianOptimization:
         init_points = int(opt_df['INIT_PTS'][0])
         n_restarts = int(opt_df['NUM_RESTARTS'][0])
         xi = float(opt_df['XI'][0])
-
+        self.sm = opt_df['SM_MODEL'][0] #No force type, this is a class object
+        
 
         # problem height and width
         heightl = np.shape(lbound)[0]
@@ -299,20 +300,26 @@ class BayesianOptimization:
 
         return Flist
         
-
-    # SURROGATE MODEL CALLS
+    # SURROGATE MODEL FUNCS
+    # testing moving these from the controller class. 
     def fit_model(self, x, y):
         # call out to parent class to use surrogate model
-        self.parent.fit_model(x,y)
+        self.sm.fit(x,y)
 
     def model_predict(self, x) : #, outvar):
         # call out to parent class to use surrogate model
-        mu, noError = self.parent.model_predict(x)
+        # mu, noError = self.parent.model_predict(x)
+        #'mean' is regressive definition. not statistical
+        #'variance' only applies for some surrogate models
+        mu, noError = self.sm.predict(x, self.output_size)
         return mu, noError
     
     def model_get_variance(self):
-        sigma = self.parent.model_get_variance()
-        return sigma
+        # sigma = self.parent.model_get_variance()
+        # return sigma
+        variance = self.sm.calculate_variance()
+        return variance
+
 
     # COMPLETION CHECKS
     def converged(self):
@@ -486,7 +493,7 @@ class BayesianOptimization:
                     # get the sample points out (to ensure standard formatting)
                     x_sample, y_sample = self.get_sample_points()
                     # fit GP model.
-                    self.parent.fit_model(x_sample, y_sample)
+                    self.fit_model(x_sample, y_sample)
                     ### ABOVE HERE IS THE END OF THE FULL INITIALIZATION SETUP###
                     self.doneInitializationBoolean = True
                     
