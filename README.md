@@ -1,6 +1,8 @@
 # bayesian_optimization_python
 
+
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15047769.svg)](https://doi.org/10.5281/zenodo.15047769)
+
 
 Repository for demoing the effect of various surrogate models on Bayesian Optimization accuracy. 
 
