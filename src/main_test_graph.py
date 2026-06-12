@@ -11,7 +11,7 @@
 #       matplotlib plot of objective function and surrogate model
 #
 #   Author(s): Lauren Linkous
-#   Last update: June 28, 2025
+#   Last update: June 11, 2026
 ##--------------------------------------------------------------------\
 
 
@@ -34,6 +34,7 @@ from surrogate_models.decision_tree_regression import DecisionTreeRegression
 from surrogate_models.matern_process import MaternProcess
 from surrogate_models.lagrangian_linear_regression import LagrangianLinearRegression
 from surrogate_models.lagrangian_polynomial_regression import LagrangianPolynomialRegression
+from surrogate_models.bayesian_linear_regression import BayesianLinearRegression
 
 
 
@@ -53,6 +54,17 @@ class TestGraph():
         OUT_VARS = func_configs.OUT_VARS        # Number of output variables (y-values)
         TARGETS = func_configs.TARGETS          # Target values for output
         GLOBAL_MIN = func_configs.GLOBAL_MIN    # Global minima, if they exist
+
+        # target format. TARGETS = [0, ...] 
+
+        # threshold is same dims as TARGETS
+        # 0 = use target value as actual target. value should EQUAL target
+        # 1 = use as threshold. value should be LESS THAN OR EQUAL to target
+        # 2 = use as threshold. value should be GREATER THAN OR EQUAL to target
+        #DEFAULT THRESHOLD
+        THRESHOLD = np.zeros_like(TARGETS) 
+        #THRESHOLD = np.ones_like(TARGETS)
+        #THRESHOLD = [0, 1, 0]
 
         # Objective function dependent variables
         self.func_F = func_configs.OBJECTIVE_FUNC  # objective function
@@ -74,11 +86,12 @@ class TestGraph():
         n_restarts = 25
 
         # using a variable for options for better debug messages
-        SM_OPTION = 5           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+        SM_OPTION = 9          # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
                                 # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
                                 # 5 = KNN regression, 6 = Decision Tree Regression
                                 # 7 = Matern, 8 = Lagrangian Linear Regression
                                 # 9 = Lagrangian Polynomial Regression
+                                # 10 = Bayesian Linear Regression
 
 
         # SURROGATE MODEL VARS
@@ -162,6 +175,15 @@ class TestGraph():
             sm_bayes = LagrangianPolynomialRegression(degree=LPReg_degree, noise=LPReg_noise, constraint_degree=LPReg_constraint_degree)
             noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
+        elif SM_OPTION == 10:
+            # Bayesian (ridge) linear regression vars
+            BLR_degree = 1      # 1 = linear. >1 = Bayesian polynomial regression
+            BLR_alpha = 1e-2    # prior precision on weights (regularization)
+            BLR_beta = None     # noise precision. None = estimate from residuals
+            num_init_points = 2
+            sm_bayes = BayesianLinearRegression(degree=BLR_degree, alpha=BLR_alpha, beta=BLR_beta)
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
+
 
    
         if noError == False:
@@ -189,6 +211,7 @@ class TestGraph():
 
 
         self.allow_update = True        # Allow objective call to update state 
+        evaluate_threshold = True       # use target or threshold. True = THRESHOLD, False = EXACT TARGET
 
 
         # Constant variables
@@ -202,7 +225,8 @@ class TestGraph():
         self.bayesOptimizer = BayesianOptimization(LB, UB, TARGETS, TOL, MAXIT,
                                 self.func_F, self.constr_F, 
                                 opt_df,
-                                parent=parent)  
+                                parent=parent, 
+                                evaluate_threshold=evaluate_threshold, obj_threshold=THRESHOLD)  
 
         # Matplotlib setup
         # # Initialize plot
@@ -260,9 +284,18 @@ class TestGraph():
     
         X = np.linspace(lbound, ubound, self.mesh_sample_dim).reshape(-1, 1)
 
-        mu, noError = self.model_predict(X)
-        sigma = self.model_get_variance()
-        ei = self.bayesOptimizer.expected_improvement(X)
+        mu, noError = self.bayesOptimizer.model_predict(X)
+        sigma = self.bayesOptimizer.model_get_variance()
+        # expected_improvement returns (ei, noError), standardized format
+        ei, noError = self.bayesOptimizer.expected_improvement(X)
+        if (noError == False) or (len(np.atleast_1d(ei)) < 1):
+            print("ERROR in expected_improvement call in plot_1D. Plotting EI as zeros.")
+            ei = np.zeros(len(X))
+        ei = np.asarray(ei, dtype=float).ravel()
+        # ravel so the confidence band math broadcasts per point,
+        # regardless of whether the surrogate returns (n,) or (n,1) arrays
+        mu = np.asarray(mu, dtype=float).ravel()
+        sigma = np.asarray(sigma, dtype=float).ravel()
 
         # initialize the plot
         if self.first_run == True:
@@ -415,10 +448,13 @@ class TestGraph():
         mu_arr = []
         ei_arr = []
         for x in X:
-            mu, noError = self.model_predict(x)
-            ei = self.bayesOptimizer.expected_improvement(x)
+            mu, noError = self.bayesOptimizer.model_predict(x)
+            # expected_improvement returns (ei, noError), standardized format
+            ei, eiNoError = self.bayesOptimizer.expected_improvement(x)
+            if (eiNoError == False) or (len(np.atleast_1d(ei)) < 1):
+                ei = np.zeros(1)
             mu_arr.append(mu)
-            ei_arr.append(ei)
+            ei_arr.append(np.sum(np.atleast_1d(ei))) # scalar per point
 
         # reshape
         ei = np.array(ei_arr).reshape(-1, 1)
@@ -452,7 +488,15 @@ class TestGraph():
         X = np.array(np.meshgrid(*x_dims)).T.reshape(-1, len(lbound)) #2 = number of dims in
         mu, noError = self.bayesOptimizer.model_predict(X)
         sigma = self.bayesOptimizer.model_get_variance()
-        ei = self.bayesOptimizer.expected_improvement(X)
+        # expected_improvement returns (ei, noError), standardized format
+        ei, eiNoError = self.bayesOptimizer.expected_improvement(X)
+        if (eiNoError == False) or (len(np.atleast_1d(ei)) < 1):
+            print("ERROR in expected_improvement call in predict_plot_mesh. Plotting EI as zeros.")
+            ei = np.zeros(len(X))
+        # coerce so the mesh_sample_dim x mesh_sample_dim reshapes in the
+        # plot functions work for (n,), (n,1), or list returns
+        ei = np.asarray(ei, dtype=float).ravel()
+        mu = np.asarray(mu, dtype=float)
 
         return X, ei, mu, sigma
 

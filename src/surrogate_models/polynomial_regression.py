@@ -30,7 +30,7 @@ class PolynomialRegression:
         errMsg = ""
         noError = True        
         if init_pts < MIN_INIT_POINTS:
-            errMsg = "ERROR: minimum required initial points is" + str(MIN_INIT_POINTS)
+            errMsg = "ERROR: minimum required initial points is " + str(MIN_INIT_POINTS)
             noError = False
         return noError, errMsg
 
@@ -61,9 +61,13 @@ class PolynomialRegression:
         # Compute pseudo-inverse for numerical stability
         self.coefficients = np.linalg.pinv(X_poly.T.dot(X_poly)).dot(X_poly.T).dot(Y_sample)
 
+        # residual MSE stored for calculate_variance()
+        residuals = Y_sample - X_poly.dot(self.coefficients.reshape((X_poly.shape[1], -1)))
+        self.train_mse = float(np.mean(residuals ** 2))
+
         self.is_fitted = True
 
-    def predict(self, X, out_vars=None):
+    def predict(self, X, n_outputs=1):
         noErrors = True
         if not self.is_fitted:
             print("PolynomialRegression model is not fitted yet")
@@ -79,7 +83,8 @@ class PolynomialRegression:
             mean = np.dot(X_poly, reshaped_coefficients)
             
             self.mean = mean.reshape((X_poly.shape[0], -1))
-        except:
+        except Exception as e:
+            print("ERROR in PolynomialRegression.predict(): " + str(e))
             self.mean = []
             noErrors = False
         
@@ -88,5 +93,7 @@ class PolynomialRegression:
     def calculate_variance(self):
         #used for calculating expected improvement, but not applying objective func
         # use the last predictions so not calculating everything twice
-        variance = np.zeros_like(self.mean)  # No variance
-        return variance
+        # homoscedastic residual-based estimate. previously returned zeros,
+        # which collapsed expected improvement to greedy exploitation.
+        n = np.atleast_2d(self.mean).shape[0] if len(np.atleast_1d(self.mean)) else 0
+        return np.full(n, getattr(self, 'train_mse', 0.0))

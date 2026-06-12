@@ -17,7 +17,7 @@ def func_F(X, NO_OF_OUTS=1):
     try:
         x = X[0]
         y = X[1]   
-        F[0] = (x**2 + y - 11)**2 + (x + y**2 - 7)**2
+        F[0] = (x**2 + y - 11.)**2 + (x + y**2 - 7.)**2
     except Exception as e:
         noErrors = False
 

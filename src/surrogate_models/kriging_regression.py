@@ -34,7 +34,7 @@ class Kriging:
         errMsg = ""
         noError = True        
         if init_pts < MIN_INIT_POINTS:
-            errMsg = "ERROR: minimum required initial points is" + str(MIN_INIT_POINTS)
+            errMsg = "ERROR: minimum required initial points is " + str(MIN_INIT_POINTS)
             noError = False
         return noError, errMsg
 
@@ -74,7 +74,7 @@ class Kriging:
             print("Tip: use more than one initial sample point")
             
 
-    def predict(self, X, out_dims=1):
+    def predict(self, X, n_outputs=1):
         noErrors = True
         if not self.is_fitted:
             print("ERROR: Kriging model is not fitted yet")
@@ -97,7 +97,8 @@ class Kriging:
                 
                 # Compute the predictions
                 predictions = np.dot(self.weights.T, self.Y_sample)
-            except:
+            except Exception as e:
+                print("ERROR in Kriging.predict(): " + str(e))
                 predictions = []
                 noErrors = False
         
@@ -114,4 +115,7 @@ class Kriging:
                 self.K_ss[i, j] = self.variogram_model_params[0] * np.linalg.norm(self.last_X[i] - self.last_X[j]) + self.variogram_model_params[1]
 
         cov_prediction = self.K_ss - np.dot(self.weights.T, self.covariances)
-        return np.diag(cov_prediction).reshape(-1,1)
+        # standardized: 1D, clipped at 0 (was reshape(-1,1), the only model
+        # returning a 2D column, which broke shape consistency in the
+        # acquisition function)
+        return np.maximum(np.diag(cov_prediction), 0.0).ravel()

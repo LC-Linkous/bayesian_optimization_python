@@ -366,19 +366,81 @@ class BayesianOptimization:
         return self.M, self.F_Pb
    
     # OPTIMIZER FUNCTIONS
+    # def expected_improvement(self, X):
+    #     # returns (ei, noError). ei is an array (vector for multi-objective).
+    #     # On any surrogate model failure, returns ([], False) rather than
+    #     # raising, so errors cannot escape step() into the controlling
+    #     # state machine.
+    #     X = np.atleast_2d(X)
+
+    #     mu, noError = self.model_predict(X) # surrogate model mean
+    #     if (noError == False) or (len(np.atleast_1d(mu)) < 1):
+    #         return [], False
+
+    #     # surrogate models return VARIANCE. standardized improvement
+    #     # divides by the STANDARD DEVIATION, so take the square root.
+    #     # clip at 0 first; near-singular kernels can produce small
+    #     # negative variances from floating point error.
+    #     variance = np.atleast_1d(np.asarray(self.model_get_variance(), dtype=float)).ravel()
+    #     sigma = np.sqrt(np.maximum(variance, 0.0))
+
+    #     mu_sample, noError = self.model_predict(self.M) #predict using sampled locations
+    #     if (noError == False) or (len(np.atleast_1d(mu_sample)) < 1):
+    #         return [], False
+    #     mu_sample_opt = np.min(mu_sample)
+
+    #     imp = mu_sample_opt - mu - self.xi
+
+    #     # True expected improvement: EI = imp * CDF(Z) + sigma * PDF(Z)
+    #     # under a normal predictive distribution.
+    #     # The previous tanh-based form, ei = imp * (1 + tanh(Z)), had no
+    #     # sigma term. The sigma * PDF(Z) term is what rewards high-
+    #     # uncertainty regions when the predicted improvement is near zero;
+    #     # without it, maximizing EI is pure greedy exploitation of the
+    #     # surrogate mean (the historical norm-based candidate comparison
+    #     # partially masked this by accident).
+    #     # CDF/PDF computed with numpy only (no scipy dependency).
+    #     Z = np.divide(imp, sigma, out=np.zeros_like(imp, dtype=float), where=sigma!=0)
+    #     cdf = 0.5 * (1.0 + self._erf(Z / np.sqrt(2.0)))
+    #     pdf = np.exp(-0.5 * Z**2) / np.sqrt(2.0 * np.pi)
+    #     ei = imp * cdf + sigma * pdf
+    #     # where the model reports zero uncertainty, fall back to
+    #     # exploitation-only improvement
+    #     ei = np.where(sigma != 0, ei, np.maximum(imp, 0.0))
+        
+    #     return ei, True
+
+
     def expected_improvement(self, X):
         X = np.atleast_2d(X)
-
+ 
         mu, noError = self.model_predict(X) #mean and standard deviation
         sigma = self.model_get_variance()
         mu_sample, _ = self.model_predict(self.M) #predict using sampled locations
         mu_sample_opt = np.min(mu_sample)
-        
+ 
+        # SHAPE GUARD: standardize surrogate model return shapes.
+        # GaussianProcess returns flat (n,) arrays for both the mean and
+        # the variance; regression-style surrogates can return a column
+        # (n,1) mean and/or variance. Flatten columns so single-output
+        # predictions are always (n,).
+        mu = np.asarray(mu, dtype=float)
+        sigma = np.asarray(sigma, dtype=float)
+        if (mu.ndim == 2) and (mu.shape[1] == 1):
+            mu = mu.ravel()
+        if (sigma.ndim == 2) and (sigma.shape[1] == 1):
+            sigma = sigma.ravel()
+ 
         imp = mu_sample_opt - mu - self.xi
-
+ 
+        # if the mean is genuinely 2D (n, out) for a multi-output
+        # surrogate, broadcast the per-point sigma across the outputs
+        if (np.ndim(imp) == 2) and (sigma.ndim == 1):
+            sigma = sigma.reshape(-1, 1)
+ 
         #Standardize Improvement
         #Z = np.where(sigma != 0, imp / sigma, 0)
-        Z = np.divide(imp, sigma, out=np.zeros_like(imp), where=sigma!=0)
+        Z = np.divide(imp, sigma, out=np.zeros_like(imp, dtype=float), where=sigma!=0)
         ei = imp * (1 + np.tanh(Z))
         # # This introduces more stability into the model, 
         # # but the tested problems do much worse with exploration
@@ -386,22 +448,55 @@ class BayesianOptimization:
         #     if sigma[idx] == 0.0:
         #         ei[:,idx] = np.multiply(ei[:,idx],0.0)
         
-        return ei
+        return ei, True # this needs the bool because of the error check. standardized format.
+
+
+    def _erf(self, x):
+        # vectorized error function, numpy only.
+        # Abramowitz & Stegun 7.1.26 approximation, |error| < 1.5e-7,
+        # far below the noise floor of the surrogate models.
+        sign = np.sign(x)
+        x = np.abs(x)
+        a1, a2, a3, a4, a5 = 0.254829592, -0.284496736, 1.421413741, -1.453152027, 1.061405429
+        p = 0.3275911
+        t = 1.0 / (1.0 + p * x)
+        y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * np.exp(-x * x)
+        return sign * y
+
+    def acquisition_score(self, x):
+        # scalar acquisition value to MINIMIZE.
+        # The sum of expected improvement (signed, so the direction of the
+        # improvement is preserved) is negated so that minimizing the score
+        # maximizes the total expected improvement. Using a signed scalar
+        # instead of np.linalg.norm() avoids losing the sign of -EI, which
+        # previously caused proposal selection to prefer the candidate with
+        # the SMALLEST |EI| rather than the largest EI.
+        # Returns np.inf if the surrogate model errored, which candidate
+        # comparison and gradient descent both treat as "do not select".
+        ei, noError = self.expected_improvement(np.array([x]))
+        if noError == False:
+            return np.inf
+        return -float(np.sum(ei))
 
     def propose_location(self):
         dim = len(self.lbound)
-        min_val = 1
-        min_x = None # may stay none if it doesn't minimize
+        min_val = np.inf
+        min_x = None # may stay None if every candidate errored
 
         for x0 in self.rng.uniform(self.lbound.reshape(1,-1)[0], self.ubound.reshape(1,-1)[0], size=(self.n_restarts, dim)):
             x, f_x = self.minimize(x0)
-            #using the l2norm to handle single and multi objective
-            if np.linalg.norm(f_x) < np.linalg.norm(min_val):
+            # f_x is a scalar (negated total expected improvement),
+            # so a direct comparison selects the candidate with the
+            # LARGEST expected improvement. np.inf (surrogate error)
+            # is never selected.
+            if f_x < min_val:
                 min_val = f_x
                 min_x = x
 
         if min_x is None:
             # Return a random point in bounds
+            # this is hit if no candidate produced a finite improvement,
+            # or if the surrogate model errored on every candidate
             min_x = self.rng.uniform(self.lbound.reshape(1, -1)[0], self.ubound.reshape(1, -1)[0])
 
 
@@ -417,18 +512,25 @@ class BayesianOptimization:
             if np.linalg.norm(x_new - x) < tol:
                 break
             x = x_new
-        f_x = -self.expected_improvement(np.array([x]))
+        f_x = self.acquisition_score(x)
         return x, f_x
 
     def numerical_gradient(self, x, eps=1e-8):
         grad = np.zeros_like(x)
+        # base evaluation hoisted out of the loop. previously this was
+        # recomputed for every dimension (2d acquisition evaluations per
+        # gradient instead of d+1), which doubled the cost of every
+        # proposal step
+        f_x = self.acquisition_score(x)
+        if not np.isfinite(f_x):
+            return grad # zero gradient. error already handled upstream
         for i in range(len(x)):
             x_eps = x.copy()
             x_eps[i] += eps
-            ei_x_eps = -self.expected_improvement(np.array([x_eps]))
-            ei_x = -self.expected_improvement(np.array([x]))
-            grad_arr = (ei_x_eps - ei_x) / eps
-            grad[i] = np.linalg.norm(grad_arr) # Aggregate. explore other methods later. (summation?)
+            f_x_eps = self.acquisition_score(x_eps)
+            if not np.isfinite(f_x_eps):
+                continue
+            grad[i] = (f_x_eps - f_x) / eps
 
         return grad
 
@@ -507,12 +609,9 @@ class BayesianOptimization:
                 self.check_global_local(self.Flist)
 
                 #self.sample_next_point() in original example, but now split up
-                self.new_point = self.propose_location()
-
-                # check if points are better than last global bests
-                self.check_global_local(self.Flist)
-
-                #self.sample_next_point(), but split up
+                # NOTE: this block previously ran twice back-to-back (copy-paste
+                # duplication). The second proposal overwrote the first, doubling
+                # the cost of every step for no behavioral difference.
                 self.new_point = self.propose_location()
             
 

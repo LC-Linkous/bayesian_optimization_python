@@ -31,11 +31,12 @@ from surrogate_models.decision_tree_regression import DecisionTreeRegression
 from surrogate_models.matern_process import MaternProcess
 from surrogate_models.lagrangian_linear_regression import LagrangianLinearRegression
 from surrogate_models.lagrangian_polynomial_regression import LagrangianPolynomialRegression
+from surrogate_models.bayesian_linear_regression import BayesianLinearRegression
 
 # OBJECTIVE FUNCTION
 #import one_dim_x_test.configs_F as func_configs     # single objective, 1D input
-#import himmelblau.configs_F as func_configs         # single objective, 2D input
-import lundquist_3_var.configs_F as func_configs    # multi objective function
+import himmelblau.configs_F as func_configs         # single objective, 2D input
+#import lundquist_3_var.configs_F as func_configs    # multi objective function
 
 class Test():
     def __init__(self):
@@ -80,11 +81,12 @@ class Test():
         n_restarts = 25
 
         # using a variable for options for better debug messages
-        SM_OPTION = 2           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
+        SM_OPTION = 9           # 0 = RBF, 1 = Gaussian Process,  2 = Kriging,
                                 # 3 = Polynomial Regression, 4 = Polynomial Chaos Expansion, 
                                 # 5 = KNN regression, 6 = Decision Tree Regression
                                 # 7 = Matern, 8 = Lagrangian Linear Regression
                                 # 9 = Lagrangian Polynomial Regression
+                                # 10 = Bayesian Linear Regression
 
 
 
@@ -167,6 +169,15 @@ class Test():
             LPReg_noise = 1e-10
             LPReg_constraint_degree = 3
             sm_bayes = LagrangianPolynomialRegression(degree=LPReg_degree, noise=LPReg_noise, constraint_degree=LPReg_constraint_degree)
+            noError, errMsg = sm_bayes._check_configuration(num_init_points)
+
+        elif SM_OPTION == 10:
+            # Bayesian (ridge) linear regression vars
+            BLR_degree = 1      # 1 = linear. >1 = Bayesian polynomial regression
+            BLR_alpha = 1e-2    # prior precision on weights (regularization)
+            BLR_beta = None     # noise precision. None = estimate from residuals
+            num_init_points = 2
+            sm_bayes = BayesianLinearRegression(degree=BLR_degree, alpha=BLR_alpha, beta=BLR_beta)
             noError, errMsg = sm_bayes._check_configuration(num_init_points)
 
 

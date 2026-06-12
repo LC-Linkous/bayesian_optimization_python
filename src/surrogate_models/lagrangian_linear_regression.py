@@ -56,7 +56,7 @@ class LagrangianLinearRegression:
             print("ERROR in lagrangian_surrogate.fit()")
             print(e)
 
-    def predict(self, X, out_dims=1):
+    def predict(self, X, n_outputs=1):
         noErrors = True
         if not self.is_fitted:
             print("ERROR: Lagrangian surrogate model is not fitted yet")
@@ -93,10 +93,14 @@ class LagrangianLinearRegression:
             residuals = self.Y_sample - Y_pred
 
             # Variance of the residuals (mean squared error)
-            variance = np.var(residuals, axis=0)
-            return variance
+            # standardized: one value per point in the last predict call.
+            # previously returned shape (n_outputs,), which was misaligned
+            # with the prediction points in the acquisition function.
+            scalar_var = float(np.mean(np.var(residuals, axis=0)))
+            n = self.last_X.shape[0] if getattr(self, 'last_X', None) is not None else self.X_sample.shape[0]
+            return np.full(n, scalar_var)
         else:
-            return np.zeros((len(self.X_sample), 1))  # Return zero variance if not fitted
+            return np.zeros(len(self.X_sample))  # Return zero variance if not fitted (1D, standardized)
 
     def lagrangian(self, X, lambda_value=1.0):
         """

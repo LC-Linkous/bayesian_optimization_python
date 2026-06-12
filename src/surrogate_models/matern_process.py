@@ -6,7 +6,12 @@
 #   Matern Process surrogate model for optimization. RBF generalization
 #
 #   Author(s): Lauren Linkous
-#   Last update: March 12, 2025
+#   Last update: June 11, 2026
+#
+#   Interface conventions (shared by all surrogate models):
+#       fit(X, Y)
+#       predict(X, n_outputs=1) -> (mu, noError)
+#       calculate_variance()    -> 1D np.array, len = num points in last predict
 ##--------------------------------------------------------------------\
 
 import numpy as np
@@ -31,7 +36,7 @@ class MaternProcess:
         errMsg = ""
         noError = True        
         if init_pts < MIN_INIT_POINTS:
-            errMsg = "ERROR: minimum required initial points is" + str(MIN_INIT_POINTS)
+            errMsg = "ERROR: minimum required initial points is " + str(MIN_INIT_POINTS)
             noError = False
         return noError, errMsg
 
@@ -55,15 +60,28 @@ class MaternProcess:
             factor = (np.sqrt(2 * self.nu) * np.sqrt(dists)) / self.length_scale
             return (1 + factor) ** self.nu * np.exp(-factor)
 
+    def _stable_inverse(self, K):
+        # Cholesky-based inverse with escalating jitter. see
+        # gaussian_process.py for full notes. avoids np.linalg.inv()
+        # failures on near-singular kernel matrices late in a run.
+        jitter = 0.0
+        for _ in range(6):
+            try:
+                L = np.linalg.cholesky(K + jitter * np.eye(len(K)))
+                L_inv = np.linalg.inv(L)
+                return L_inv.T.dot(L_inv)
+            except np.linalg.LinAlgError:
+                jitter = max(jitter * 10, 1e-10)
+        return np.linalg.pinv(K)
+
     def fit(self, X, Y):
-        # returns mean and variance
         self.X_sample = np.atleast_2d(X)
         self.Y_sample = np.atleast_2d(Y)
         self.K = self.matern_kernel(self.X_sample, self.X_sample) + self.noise * np.eye(len(self.X_sample))
-        self.K_inv = np.linalg.inv(self.K)
+        self.K_inv = self._stable_inverse(self.K)
         self.is_fitted = True
 
-    def predict(self, X, out_vars=None):
+    def predict(self, X, n_outputs=1):
         noErrors = True
         if not self.is_fitted:
             print("ERROR: MaternProcess model is not fitted yet")
@@ -79,7 +97,8 @@ class MaternProcess:
             ysample = self.Y_sample.reshape(self.Y_sample.shape[0], -1)
             mu_s = self.K_s.T.dot(self.K_inv).dot(ysample)
             mu_s = mu_s.ravel()
-        except:
+        except Exception as e:
+            print("ERROR in MaternProcess.predict(): " + str(e))
             mu_s = []
             noErrors = False
         return mu_s, noErrors
@@ -88,4 +107,4 @@ class MaternProcess:
         # used for calculating expected improvement, but not applying objective func
         # use the last predictions so not calculating everything twice
         cov_s = self.K_ss - self.K_s.T.dot(self.K_inv).dot(self.K_s) 
-        return np.diag(cov_s)
+        return np.maximum(np.diag(cov_s), 0.0).ravel()

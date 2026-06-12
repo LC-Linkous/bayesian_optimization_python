@@ -6,7 +6,17 @@
 #   Decision Tree Regression surrogate model for optimization. 
 #
 #   Author(s): Lauren Linkous 
-#   Last update: December 2, 2024
+#   Last update: June 11, 2026
+#
+#   Interface conventions (shared by all surrogate models):
+#       fit(X, Y)
+#       predict(X, n_outputs=1) -> (mu, noError)
+#       calculate_variance()    -> 1D np.array, len = num points in last predict
+#
+#   Leaves now store the variance of their training Y values in addition
+#   to the mean, so calculate_variance() returns real per-leaf uncertainty
+#   instead of zeros (zeros collapse expected improvement to greedy
+#   exploitation with no exploration).
 ##--------------------------------------------------------------------\
 
 
@@ -16,7 +26,8 @@ class DecisionTreeRegression:
     def __init__(self, max_depth=None):
         self.max_depth = max_depth
         self.tree = None
-        self.last_predictions = None
+        self.last_predictions = []
+        self.last_variances = []
         self.is_fitted = False
 
     # configuration check for surrogate models
@@ -30,20 +41,28 @@ class DecisionTreeRegression:
         errMsg = ""
         noError = True        
         if init_pts < MIN_INIT_POINTS:
-            errMsg = "ERROR: minimum required initial points is" + str(MIN_INIT_POINTS)
+            errMsg = "ERROR: minimum required initial points is " + str(MIN_INIT_POINTS)
             noError = False
         return noError, errMsg
 
     
     # SM functions
     def fit(self, X, Y):
-        Y = Y.reshape(Y.shape[0], -1)  # Ensure Y is 2D
+        X = np.atleast_2d(X)
+        Y = np.asarray(Y)
         self.tree = self._build_tree(X, Y, depth=0)
         self.is_fitted = True
 
+    def _make_leaf(self, Y):
+        # Leaf node: mean prediction plus variance of the training Y
+        # values that landed in this leaf (averaged over output dims).
+        return {'leaf': True,
+                'value': np.mean(Y, axis=0),
+                'variance': float(np.mean(np.var(Y, axis=0)))}
+
     def _build_tree(self, X, Y, depth):
         if depth == self.max_depth or self._check_uniform(Y):
-            return np.mean(Y)  # Leaf node, return mean of Y
+            return self._make_leaf(Y)
 
         num_features = X.shape[1]
         best_feature, best_split_value = None, None
@@ -64,14 +83,15 @@ class DecisionTreeRegression:
                         best_split_value = value
 
         if best_feature is None:
-            return np.mean(Y)  # Leaf node, return mean of Y
+            return self._make_leaf(Y)
 
         left_mask = X[:, best_feature] <= best_split_value
         right_mask = X[:, best_feature] > best_split_value
         left_subtree = self._build_tree(X[left_mask], Y[left_mask], depth + 1)
         right_subtree = self._build_tree(X[right_mask], Y[right_mask], depth + 1)
 
-        return {'feature': best_feature,
+        return {'leaf': False,
+                'feature': best_feature,
                 'split_value': best_split_value,
                 'left': left_subtree,
                 'right': right_subtree}
@@ -84,7 +104,7 @@ class DecisionTreeRegression:
         mse_right = np.var(right_y) * len(right_y)
         return mse_left + mse_right
 
-    def predict(self, X, out_vars=None):
+    def predict(self, X, n_outputs=1):
         noErrors = True
         # this is applying the objective function for the surrogate model
         if not self.is_fitted:
@@ -92,27 +112,25 @@ class DecisionTreeRegression:
             noErrors = False
         X = np.atleast_2d(X)  # Ensure X is 2D
         try:        
-            self.last_predictions = np.array([self._traverse_tree(x, self.tree) for x in X])
-        except:
+            leaves = [self._traverse_tree(x, self.tree) for x in X]
+            self.last_predictions = np.array([leaf['value'] for leaf in leaves])
+            self.last_variances = np.array([leaf['variance'] for leaf in leaves])
+        except Exception as e:
+            print("ERROR in DecisionTreeRegression.predict(): " + str(e))
             self.last_predictions = []
+            self.last_variances = []
             noErrors = False
         return self.last_predictions, noErrors
     
     def calculate_variance(self):
         #used for calculating expected improvement, but not applying objective func
         # use the last predictions so not calculating everything twice
-        variance = np.zeros_like(self.last_predictions)  # No variance
-        return variance
+        return np.asarray(self.last_variances, dtype=float).ravel()
 
-    
     def _traverse_tree(self, x, node):
-        if isinstance(node, (float, int)):
+        if node['leaf']:
             return node
-
-        feature = node['feature']
-        split_value = node['split_value']
-
-        if x[feature] <= split_value:
+        if x[node['feature']] <= node['split_value']:
             return self._traverse_tree(x, node['left'])
         else:
             return self._traverse_tree(x, node['right'])
